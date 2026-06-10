@@ -26,6 +26,7 @@ function normalize(row) {
     bookedBy: row.booked_by,
     start: new Date(row.starts_at),
     end: new Date(row.ends_at),
+    seriesId: row.series_id || null,
   };
 }
 
@@ -63,6 +64,18 @@ async function supabaseStore() {
       return rpc("create_booking", {
         p_room: b.room, p_title: b.title, p_booked_by: b.bookedBy,
         p_starts_at: b.start.toISOString(), p_ends_at: b.end.toISOString(),
+      });
+    },
+    createRecurring(b, intervalDays, untilDateStr) {
+      return rpc("create_recurring_booking", {
+        p_room: b.room, p_title: b.title, p_booked_by: b.bookedBy,
+        p_starts_at: b.start.toISOString(), p_ends_at: b.end.toISOString(),
+        p_interval_days: intervalDays, p_until: untilDateStr,
+      });
+    },
+    cancelSeries(id, changedBy, reason) {
+      return rpc("cancel_booking_series", {
+        p_id: id, p_changed_by: changedBy, p_reason: reason,
       });
     },
     change(id, b, changedBy, reason) {
@@ -127,6 +140,57 @@ function demoStore() {
         ends_at: b.end.toISOString(), status: "active",
       });
       save(db);
+    },
+    async createRecurring(b, intervalDays, untilDateStr) {
+      const db = load();
+      const seriesId = crypto.randomUUID();
+      const until = dateAt(untilDateStr, CLOSE_MIN);
+      const created = [], skipped = [];
+      for (let i = 0; i < 60; i++) {
+        const start = new Date(b.start);
+        start.setDate(start.getDate() + i * intervalDays);
+        if (start > until) break;
+        const end = new Date(b.end);
+        end.setDate(end.getDate() + i * intervalDays);
+        const inst = { ...b, start, end };
+        if (overlaps(db, inst, null)) {
+          skipped.push(toDateInput(start));
+          continue;
+        }
+        db.bookings.push({
+          id: crypto.randomUUID(), room: b.room, title: b.title,
+          booked_by: b.bookedBy, starts_at: start.toISOString(),
+          ends_at: end.toISOString(), status: "active", series_id: seriesId,
+        });
+        created.push(toDateInput(start));
+      }
+      if (!created.length) {
+        throw new Error(`${b.room} is already booked at that time on every chosen date.`);
+      }
+      save(db);
+      return { series_id: seriesId, created, skipped };
+    },
+    async cancelSeries(id, changedBy, reason) {
+      const db = load();
+      const row = db.bookings.find((x) => x.id === id && x.status === "active");
+      if (!row) throw new Error("Booking not found (it may have been cancelled).");
+      if (!row.series_id) throw new Error("This booking is not part of a repeating series.");
+      const targets = db.bookings.filter(
+        (x) =>
+          x.series_id === row.series_id &&
+          x.status === "active" &&
+          new Date(x.starts_at) >= new Date(row.starts_at)
+      );
+      for (const t of targets) {
+        t.status = "cancelled";
+        db.changes.push({
+          booking_id: t.id, action: "cancel", changed_by: changedBy, reason,
+          old_room: t.room, old_starts_at: t.starts_at, old_ends_at: t.ends_at,
+          changed_at: new Date().toISOString(),
+        });
+      }
+      save(db);
+      return targets.length;
     },
     async change(id, b, changedBy, reason) {
       const db = load();
@@ -285,7 +349,7 @@ async function render() {
       block.innerHTML = `<span class="what"></span><span class="who"></span>`;
       block.querySelector(".what").textContent = b.title;
       block.querySelector(".who").textContent =
-        `${fmtTime(b.start)}–${fmtTime(b.end)} · ${b.bookedBy}`;
+        `${b.seriesId ? "↻ " : ""}${fmtTime(b.start)}–${fmtTime(b.end)} · ${b.bookedBy}`;
       block.addEventListener("click", () => openManageModal(b));
       track.appendChild(block);
     }
@@ -299,6 +363,11 @@ function showBanner(text) {
   const el = $("#banner");
   el.textContent = text;
   el.classList.remove("hidden");
+}
+
+function showNotice(text) {
+  $("#notice-text").textContent = text;
+  $("#notice").classList.remove("hidden");
 }
 
 // ── Booking form (create + edit) ────────────────────────────────────
@@ -321,6 +390,10 @@ function openCreateModal(room, startMin) {
   $("#booking-modal-title").textContent = "New booking";
   $("#booking-submit").textContent = "Book room";
   $("#edit-only").classList.add("hidden");
+  $("#repeat-row").classList.remove("hidden");
+  $("#f-repeat").value = "";
+  $("#f-until").value = "";
+  $("#f-until-label").classList.add("hidden");
   $("#f-room").value = room;
   $("#f-date").value = toDateInput(currentDate);
   $("#f-start").value = startMin;
@@ -336,9 +409,12 @@ function openCreateModal(room, startMin) {
 
 function openEditModal(booking) {
   editingBooking = booking;
-  $("#booking-modal-title").textContent = "Change booking";
+  $("#booking-modal-title").textContent = booking.seriesId
+    ? "Change booking (just this date)"
+    : "Change booking";
   $("#booking-submit").textContent = "Save changes";
   $("#edit-only").classList.remove("hidden");
+  $("#repeat-row").classList.add("hidden");
   $("#f-room").value = booking.room;
   $("#f-date").value = toDateInput(booking.start);
   $("#f-start").value = minsOf(booking.start);
@@ -427,6 +503,11 @@ async function submitBookingForm(event) {
 
   const payload = { room: f.room, title, bookedBy: name, start: f.start, end: f.end };
 
+  const repeatDays = Number($("#f-repeat").value) || 0;
+  const untilStr = $("#f-until").value;
+  if (!editingBooking && repeatDays && !untilStr)
+    return formError("Please choose the last date for the repeat.");
+
   const submitBtn = $("#booking-submit");
   submitBtn.disabled = true;
   try {
@@ -437,6 +518,17 @@ async function submitBookingForm(event) {
       if (reason.length < 3) return formError("Please give a reason for this change.");
       await store.change(editingBooking.id, payload, changedBy, reason);
       localStorage.setItem("my-name", changedBy);
+    } else if (repeatDays) {
+      const result = await store.createRecurring(payload, repeatDays, untilStr);
+      if (result.skipped.length) {
+        const days = result.skipped.map((d) =>
+          dateAt(d, 0).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+        );
+        showNotice(
+          `${result.created.length} bookings made. ⚠️ These dates were skipped because ${f.room} is already booked then: ${days.join(", ")}.`
+        );
+      }
+      localStorage.setItem("my-name", name);
     } else {
       await store.create(payload);
       localStorage.setItem("my-name", name);
@@ -456,6 +548,10 @@ async function submitBookingForm(event) {
 async function openManageModal(booking) {
   managedBooking = booking;
   $("#m-title").textContent = booking.title;
+  $("#m-series").classList.toggle("hidden", !booking.seriesId);
+  $("#c-scope").classList.toggle("hidden", !booking.seriesId);
+  const oneRadio = document.querySelector('input[name="cscope"][value="one"]');
+  if (oneRadio) oneRadio.checked = true;
   const d = $("#m-details");
   d.innerHTML = "";
   const lines = [
@@ -514,8 +610,14 @@ async function submitCancelForm(event) {
     errEl.classList.remove("hidden");
     return;
   }
+  const scope = document.querySelector('input[name="cscope"]:checked')?.value || "one";
   try {
-    await store.cancel(managedBooking.id, name, reason);
+    if (managedBooking.seriesId && scope === "future") {
+      const n = await store.cancelSeries(managedBooking.id, name, reason);
+      showNotice(`${n} repeating booking${n === 1 ? "" : "s"} cancelled.`);
+    } else {
+      await store.cancel(managedBooking.id, name, reason);
+    }
     localStorage.setItem("my-name", name);
     $("#manage-modal").close();
     await render();
@@ -523,6 +625,42 @@ async function submitCancelForm(event) {
     errEl.textContent = err.message;
     errEl.classList.remove("hidden");
   }
+}
+
+// ── Add to my calendar (.ics download) ──────────────────────────────
+
+function icsEscape(s) {
+  return s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n");
+}
+
+function icsStamp(d) {
+  return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+
+function downloadIcs(b) {
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Oliver & Co//Room Bookings//EN",
+    "BEGIN:VEVENT",
+    `UID:${b.id}@oliverandco-room-booking`,
+    `DTSTAMP:${icsStamp(new Date())}`,
+    `DTSTART:${icsStamp(b.start)}`,
+    `DTEND:${icsStamp(b.end)}`,
+    `SUMMARY:${icsEscape(`${b.room}: ${b.title}`)}`,
+    `LOCATION:${icsEscape(`${b.room}, Oliver & Co`)}`,
+    `DESCRIPTION:${icsEscape(`Booked by ${b.bookedBy} via the room booking app.`)}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ];
+  const blob = new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${b.room.replace(/\s+/g, "-")}-${toDateInput(b.start)}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(a.href);
 }
 
 // ── Wiring ──────────────────────────────────────────────────────────
@@ -568,6 +706,20 @@ async function init() {
       checkClash();
     });
   }
+
+  $("#f-repeat").addEventListener("change", () => {
+    const repeating = !!$("#f-repeat").value;
+    $("#f-until-label").classList.toggle("hidden", !repeating);
+    if (repeating && !$("#f-until").value) {
+      const d = dateAt($("#f-date").value || toDateInput(currentDate), 0);
+      d.setDate(d.getDate() + 12 * 7); // suggest ~3 months of repeats
+      $("#f-until").value = toDateInput(d);
+    }
+  });
+
+  $("#notice-ok").addEventListener("click", () => $("#notice").classList.add("hidden"));
+
+  $("#m-ics-btn").addEventListener("click", () => downloadIcs(managedBooking));
 
   $("#m-change-btn").addEventListener("click", () => {
     $("#manage-modal").close();

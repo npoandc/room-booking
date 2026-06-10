@@ -29,6 +29,10 @@
 
   <main>
     <p id="day-heading" class="day-heading"></p>
+    <div id="notice" class="notice hidden">
+      <span id="notice-text"></span>
+      <button type="button" class="ghost-btn" id="notice-ok">OK</button>
+    </div>
     <div id="grid-wrap" class="grid-wrap">
       <div id="grid"></div>
     </div>
@@ -54,6 +58,20 @@
         </label>
         <label>To
           <select id="f-end" required></select>
+        </label>
+      </div>
+
+      <div class="row repeat-row" id="repeat-row">
+        <label>Repeats
+          <select id="f-repeat">
+            <option value="">Does not repeat</option>
+            <option value="7">Every week</option>
+            <option value="14">Every 2 weeks</option>
+            <option value="28">Every 4 weeks</option>
+          </select>
+        </label>
+        <label id="f-until-label" class="hidden">Last date
+          <input type="date" id="f-until">
         </label>
       </div>
 
@@ -88,13 +106,15 @@
   <dialog id="manage-modal">
     <div class="manage">
       <h2 id="m-title"></h2>
+      <p id="m-series" class="series-note hidden">↻ Part of a repeating series</p>
       <p id="m-details" class="details"></p>
       <div id="m-history" class="history"></div>
 
       <div class="actions">
         <button type="button" class="ghost-btn" data-close>Close</button>
-        <button type="button" class="ghost-btn danger" id="m-cancel-btn">Cancel booking…</button>
-        <button type="button" class="primary-btn" id="m-change-btn">Change booking…</button>
+        <button type="button" class="ghost-btn" id="m-ics-btn">Add to my calendar</button>
+        <button type="button" class="ghost-btn danger" id="m-cancel-btn">Cancel…</button>
+        <button type="button" class="primary-btn" id="m-change-btn">Change…</button>
       </div>
 
       <form id="cancel-form" class="cancel-form hidden" novalidate>
@@ -105,6 +125,10 @@
         <label>Reason for cancelling
           <textarea id="c-reason" rows="2" placeholder="e.g. Meeting no longer needed" maxlength="300" required></textarea>
         </label>
+        <div id="c-scope" class="scope hidden">
+          <label class="radio"><input type="radio" name="cscope" value="one" checked> Cancel just this booking</label>
+          <label class="radio"><input type="radio" name="cscope" value="future"> Cancel this and all future repeats</label>
+        </div>
         <div id="cancel-error" class="error hidden" role="alert"></div>
         <div class="actions">
           <button type="button" class="ghost-btn" id="c-back">Keep booking</button>

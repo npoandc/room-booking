@@ -269,6 +269,40 @@ dialog label {
 dialog label > input, dialog label > select, dialog label > textarea { margin-top: 0.3rem; font-weight: 400; }
 
 dialog .row { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 0.6rem; }
+dialog .repeat-row { grid-template-columns: 1.3fr 1fr; }
+
+.series-note {
+  margin: -0.5rem 0 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--oc-pink);
+}
+
+.scope { margin: 0.25rem 0 0.5rem; }
+.scope .radio {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 400;
+  color: var(--ink);
+  margin-bottom: 0.35rem;
+}
+.scope .radio input { width: auto; margin: 0; }
+
+.notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  border: 1px solid var(--warn-line);
+  border-left: 4px solid var(--oc-yellow);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.86rem;
+  margin-bottom: 0.9rem;
+}
 
 .actions {
   display: flex;
