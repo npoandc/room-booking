@@ -3,15 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Room Bookings</title>
+  <title>Oliver &amp; Co — Room Bookings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300..700;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>📅</text></svg>">
+  <!-- the singular 'O' favicon, per the brand guidelines -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='39' fill='none' stroke='%23ab1365' stroke-width='22'/></svg>">
 </head>
 <body>
   <div id="banner" class="banner hidden"></div>
 
   <header class="topbar">
-    <h1>Room Bookings</h1>
+    <h1 class="brand">
+      <span class="wordmark">Oliver<em>&amp;</em>Co</span>
+      <span class="app-name">Room Bookings</span>
+    </h1>
     <div class="date-controls">
       <button id="prev-day" class="icon-btn" title="Previous day" aria-label="Previous day">‹</button>
       <button id="today-btn" class="ghost-btn">Today</button>
