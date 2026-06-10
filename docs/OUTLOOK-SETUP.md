@@ -27,7 +27,7 @@ copy the "Request to IT" section at the bottom of this page into an email.
 
    ```powershell
    New-DistributionGroup -Name "RoomBookingSyncAllowed" -Type Security
-   Add-DistributionGroupMember -Identity "RoomBookingSyncAllowed" -Member roombookings@yourcompany.co.uk
+   Add-DistributionGroupMember -Identity "RoomBookingSyncAllowed" -Member roombooking@oliverandco.co.uk
    New-ApplicationAccessPolicy -AppId <CLIENT_ID> -PolicyScopeGroupId RoomBookingSyncAllowed@yourcompany.co.uk -AccessRight RestrictAccess
    ```
 
@@ -41,7 +41,7 @@ Actions → New repository secret**, add each of:
 | `MS_TENANT_ID` | Directory (tenant) ID from step 2 |
 | `MS_CLIENT_ID` | Application (client) ID from step 2 |
 | `MS_CLIENT_SECRET` | The secret value from step 3 |
-| `OUTLOOK_MAILBOX` | The mailbox that owns the shared calendar, e.g. `roombookings@yourcompany.co.uk` |
+| `OUTLOOK_MAILBOX` | `roombooking@oliverandco.co.uk` (the shared room-booking mailbox) |
 | `OUTLOOK_CALENDAR_NAME` | *(optional)* the calendar's name inside that mailbox; leave out to use the mailbox's default calendar |
 | `SUPABASE_URL` | Same project URL as in `config.js` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` key (keep secret!) |
@@ -71,10 +71,13 @@ Then go to the repo's **Actions** tab → **Sync bookings to Outlook** →
 > 2. Add the Microsoft Graph **application** permission
 >    **Calendars.ReadWrite** and grant admin consent.
 > 3. Create a client secret.
-> 4. (Recommended) Restrict the app to only the room-bookings mailbox using a
->    `New-ApplicationAccessPolicy`.
-> 5. Send me, securely: the **tenant ID**, **client ID**, **client secret**,
->    and the **email address of the mailbox** that owns the room calendar.
+> 4. (Recommended) Restrict the app to only the `roombooking@oliverandco.co.uk`
+>    mailbox using a `New-ApplicationAccessPolicy`.
+> 5. Send me, securely: the **tenant ID**, **client ID**, and **client secret**.
+>
+> Note: an app registration like this may already exist from the earlier room
+> booking project — if so, please rotate its client secret and send me the new
+> one rather than creating a duplicate registration.
 >
 > The credentials will be stored as encrypted GitHub Actions secrets and used
 > only to create/update events in that one calendar.

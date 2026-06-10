@@ -9,7 +9,7 @@
 //   MS_CLIENT_ID              from the Entra app registration
 //   MS_CLIENT_SECRET          from the Entra app registration
 //   OUTLOOK_MAILBOX           mailbox that owns the shared calendar,
-//                             e.g. roombookings@yourcompany.co.uk
+//                             e.g. roombooking@oliverandco.co.uk
 // Optional:
 //   OUTLOOK_CALENDAR_NAME     calendar name inside that mailbox; if unset,
 //                             the mailbox's default calendar is used.
