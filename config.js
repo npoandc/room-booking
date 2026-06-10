@@ -7,6 +7,6 @@
 //   2. Run supabase/schema.sql in the Supabase SQL editor
 //   3. Paste your project's URL and "anon public" key below
 window.CONFIG = {
-  SUPABASE_URL: "",      // e.g. "https://abcdefgh.supabase.co"
-  SUPABASE_ANON_KEY: "", // the long "anon public" key from Settings → API
+  SUPABASE_URL: "https://rkalpwgtefmxnvyjqcvp.supabase.co",      // e.g. "https://abcdefgh.supabase.co"
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJrYWxwd2d0ZWZteG52eWpxY3ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwOTg0MTMsImV4cCI6MjA5NjY3NDQxM30.e2JZAnl9ho0KpvWZLxWN6cK8sgX0E8-WKpUI4ficAM4", // the long "anon public" key from Settings → API
 };
