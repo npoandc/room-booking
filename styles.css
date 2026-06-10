@@ -340,6 +340,10 @@ dialog .repeat-row { grid-template-columns: 1.3fr 1fr; }
 
 .cancel-form { border-top: 1px solid var(--line); margin-top: 1.25rem; padding-top: 1rem; }
 
+.cal-menu { border-top: 1px solid var(--line); margin-top: 1rem; padding-top: 0.85rem; }
+.cal-menu-label { margin: 0 0 0.5rem; font-size: 0.82rem; font-weight: 600; color: var(--muted); }
+.cal-menu-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
 .edit-only { border-top: 1px dashed var(--line); padding-top: 0.9rem; margin-top: 0.25rem; }
 
 footer {

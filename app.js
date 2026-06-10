@@ -592,6 +592,7 @@ async function openManageModal(booking) {
 
   $("#cancel-form").classList.add("hidden");
   $("#cancel-error").classList.add("hidden");
+  $("#cal-menu").classList.add("hidden");
   $("#c-name").value = localStorage.getItem("my-name") || "";
   $("#c-reason").value = "";
   $("#manage-modal").showModal();
@@ -654,13 +655,51 @@ function downloadIcs(b) {
     "END:VCALENDAR",
   ];
   const blob = new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar" });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
+  a.href = url;
   a.download = `${b.room.replace(/\s+/g, "-")}-${toDateInput(b.start)}.ics`;
   document.body.appendChild(a);
   a.click();
-  a.remove();
-  URL.revokeObjectURL(a.href);
+  // Revoking too early makes some browsers cancel the download silently.
+  setTimeout(() => {
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, 2000);
+}
+
+function calendarEventText(b) {
+  return {
+    title: `${b.room}: ${b.title}`,
+    location: `${b.room}, Oliver & Co`,
+    details: `Booked by ${b.bookedBy} via the room booking app.`,
+  };
+}
+
+function outlookUrl(b) {
+  const t = calendarEventText(b);
+  const q = new URLSearchParams({
+    path: "/calendar/action/compose",
+    rru: "addevent",
+    subject: t.title,
+    location: t.location,
+    body: t.details,
+    startdt: b.start.toISOString(),
+    enddt: b.end.toISOString(),
+  });
+  return `https://outlook.office.com/calendar/0/deeplink/compose?${q}`;
+}
+
+function googleUrl(b) {
+  const t = calendarEventText(b);
+  const q = new URLSearchParams({
+    action: "TEMPLATE",
+    text: t.title,
+    location: t.location,
+    details: t.details,
+    dates: `${icsStamp(b.start)}/${icsStamp(b.end)}`,
+  });
+  return `https://calendar.google.com/calendar/render?${q}`;
 }
 
 // ── Wiring ──────────────────────────────────────────────────────────
@@ -719,7 +758,14 @@ async function init() {
 
   $("#notice-ok").addEventListener("click", () => $("#notice").classList.add("hidden"));
 
-  $("#m-ics-btn").addEventListener("click", () => downloadIcs(managedBooking));
+  $("#m-ics-btn").addEventListener("click", () => {
+    $("#cal-menu").classList.toggle("hidden");
+  });
+  $("#cal-outlook").addEventListener("click", () =>
+    window.open(outlookUrl(managedBooking), "_blank", "noopener"));
+  $("#cal-google").addEventListener("click", () =>
+    window.open(googleUrl(managedBooking), "_blank", "noopener"));
+  $("#cal-file").addEventListener("click", () => downloadIcs(managedBooking));
 
   $("#m-change-btn").addEventListener("click", () => {
     $("#manage-modal").close();
