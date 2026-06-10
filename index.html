@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Room Bookings</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>📅</text></svg>">
+</head>
+<body>
+  <div id="banner" class="banner hidden"></div>
+
+  <header class="topbar">
+    <h1>Room Bookings</h1>
+    <div class="date-controls">
+      <button id="prev-day" class="icon-btn" title="Previous day" aria-label="Previous day">‹</button>
+      <button id="today-btn" class="ghost-btn">Today</button>
+      <button id="next-day" class="icon-btn" title="Next day" aria-label="Next day">›</button>
+      <input type="date" id="date-picker">
+    </div>
+  </header>
+
+  <main>
+    <p id="day-heading" class="day-heading"></p>
+    <div id="grid-wrap" class="grid-wrap">
+      <div id="grid"></div>
+    </div>
+    <p id="closed-msg" class="closed-msg hidden">Rooms are bookable Monday to Friday, 8:00&nbsp;am – 6:00&nbsp;pm. Pick a weekday to make a booking.</p>
+    <p class="hint">Click an empty slot to book it. Click a booking to change or cancel it.</p>
+  </main>
+
+  <!-- Create / edit booking -->
+  <dialog id="booking-modal">
+    <form id="booking-form" method="dialog" novalidate>
+      <h2 id="booking-modal-title">New booking</h2>
+
+      <label>Room
+        <select id="f-room" required></select>
+      </label>
+
+      <div class="row">
+        <label>Date
+          <input type="date" id="f-date" required>
+        </label>
+        <label>From
+          <select id="f-start" required></select>
+        </label>
+        <label>To
+          <select id="f-end" required></select>
+        </label>
+      </div>
+
+      <label>Purpose
+        <input type="text" id="f-title" placeholder="e.g. Team meeting" maxlength="120" required>
+      </label>
+
+      <label>Your name
+        <input type="text" id="f-name" placeholder="e.g. Jane Smith" maxlength="80" required>
+      </label>
+
+      <div id="edit-only" class="edit-only hidden">
+        <label>Who is making this change?
+          <input type="text" id="f-changed-by" placeholder="Your name" maxlength="80">
+        </label>
+        <label>Reason for the change
+          <textarea id="f-reason" rows="2" placeholder="e.g. Meeting moved to the afternoon" maxlength="300"></textarea>
+        </label>
+      </div>
+
+      <div id="clash-warning" class="warning hidden" role="alert"></div>
+      <div id="form-error" class="error hidden" role="alert"></div>
+
+      <div class="actions">
+        <button type="button" class="ghost-btn" data-close>Close</button>
+        <button type="submit" class="primary-btn" id="booking-submit">Book room</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- View / manage booking -->
+  <dialog id="manage-modal">
+    <div class="manage">
+      <h2 id="m-title"></h2>
+      <p id="m-details" class="details"></p>
+      <div id="m-history" class="history"></div>
+
+      <div class="actions">
+        <button type="button" class="ghost-btn" data-close>Close</button>
+        <button type="button" class="ghost-btn danger" id="m-cancel-btn">Cancel booking…</button>
+        <button type="button" class="primary-btn" id="m-change-btn">Change booking…</button>
+      </div>
+
+      <form id="cancel-form" class="cancel-form hidden" novalidate>
+        <h3>Cancel this booking</h3>
+        <label>Who is cancelling it?
+          <input type="text" id="c-name" placeholder="Your name" maxlength="80" required>
+        </label>
+        <label>Reason for cancelling
+          <textarea id="c-reason" rows="2" placeholder="e.g. Meeting no longer needed" maxlength="300" required></textarea>
+        </label>
+        <div id="cancel-error" class="error hidden" role="alert"></div>
+        <div class="actions">
+          <button type="button" class="ghost-btn" id="c-back">Keep booking</button>
+          <button type="submit" class="danger-btn">Confirm cancellation</button>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <footer>Bookable Monday–Friday, 8:00 am – 6:00 pm</footer>
+
+  <script src="config.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,251 @@
+:root {
+  --accent: #0f6f5c;
+  --accent-soft: #e3f1ee;
+  --ink: #1c2b2a;
+  --muted: #6b7c7a;
+  --line: #e4e9e8;
+  --bg: #fafbfb;
+  --warn-bg: #fff7e6;
+  --warn-ink: #8a5a00;
+  --danger: #b3362c;
+  --danger-bg: #fdecea;
+  font-size: 16px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.banner {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+  text-align: center;
+  border-bottom: 1px solid #f0e2c4;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.date-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+main { padding: 1rem 1.25rem 2rem; max-width: 1200px; margin: 0 auto; }
+
+.day-heading {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ---- buttons & inputs ---- */
+button { font: inherit; cursor: pointer; }
+
+.icon-btn, .ghost-btn {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.4rem 0.7rem;
+  color: var(--ink);
+}
+.icon-btn:hover, .ghost-btn:hover { border-color: var(--accent); color: var(--accent); }
+.icon-btn { font-size: 1.1rem; line-height: 1; padding: 0.35rem 0.65rem; }
+
+.primary-btn {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.45rem 1rem;
+  font-weight: 600;
+}
+.primary-btn:hover { filter: brightness(1.08); }
+
+.danger-btn {
+  background: var(--danger);
+  border: 1px solid var(--danger);
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.45rem 1rem;
+  font-weight: 600;
+}
+.ghost-btn.danger { color: var(--danger); }
+.ghost-btn.danger:hover { border-color: var(--danger); }
+
+input[type="date"], input[type="text"], select, textarea {
+  font: inherit;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  background: #fff;
+  width: 100%;
+}
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid var(--accent-soft);
+  border-color: var(--accent);
+}
+.date-controls input[type="date"] { width: auto; }
+
+/* ---- grid ---- */
+.grid-wrap { overflow-x: auto; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+
+#grid { min-width: 860px; }
+
+.grid-row {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  border-top: 1px solid var(--line);
+}
+.grid-row:first-child { border-top: none; }
+
+.room-label {
+  padding: 0.85rem 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-right: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+}
+
+.time-header {
+  display: grid;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.time-header span { padding: 0.45rem 0 0.45rem 0.3rem; border-left: 1px solid var(--line); }
+
+.track {
+  position: relative;
+  display: grid;
+  min-height: 52px;
+}
+
+.slot { border-left: 1px solid var(--line); cursor: pointer; }
+.slot.half { border-left-style: dotted; border-left-color: #f0f3f2; }
+.slot:hover { background: var(--accent-soft); }
+.slot.past { background: #f5f6f6; cursor: default; }
+.slot.past:hover { background: #f5f6f6; }
+
+.booking-block {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 7px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  overflow: hidden;
+  cursor: pointer;
+  border: none;
+  text-align: left;
+}
+.booking-block:hover { filter: brightness(1.1); }
+.booking-block .who { opacity: 0.85; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.booking-block .what { font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.closed-msg { color: var(--muted); padding: 2rem 0; text-align: center; }
+.hint { color: var(--muted); font-size: 0.82rem; margin-top: 0.7rem; }
+
+/* ---- dialogs ---- */
+dialog {
+  border: none;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  padding: 1.5rem;
+  width: min(440px, calc(100vw - 2rem));
+}
+dialog::backdrop { background: rgba(20, 35, 33, 0.35); }
+
+dialog h2 { margin: 0 0 1rem; font-size: 1.05rem; }
+dialog h3 { margin: 0 0 0.75rem; font-size: 0.95rem; }
+
+dialog label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+dialog label > input, dialog label > select, dialog label > textarea { margin-top: 0.3rem; font-weight: 400; }
+
+dialog .row { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 0.6rem; }
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+}
+
+.warning {
+  background: var(--warn-bg);
+  color: var(--warn-ink);
+  border: 1px solid #f0e2c4;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.84rem;
+}
+.error {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid #f3c7c2;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.84rem;
+  margin-top: 0.5rem;
+}
+
+.details { font-size: 0.9rem; line-height: 1.55; margin: 0 0 0.75rem; }
+.details strong { font-weight: 650; }
+
+.history { font-size: 0.78rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 0.6rem; }
+.history p { margin: 0.25rem 0; }
+.history .h-title { font-weight: 650; color: var(--ink); margin-bottom: 0.35rem; }
+
+.cancel-form { border-top: 1px solid var(--line); margin-top: 1.25rem; padding-top: 1rem; }
+
+.edit-only { border-top: 1px dashed var(--line); padding-top: 0.9rem; margin-top: 0.25rem; }
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.78rem;
+  padding: 1rem 0 2rem;
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 640px) {
+  .topbar { padding: 0.75rem 0.9rem; }
+  main { padding: 0.75rem 0.9rem 1.5rem; }
+  dialog .row { grid-template-columns: 1fr; }
+}
