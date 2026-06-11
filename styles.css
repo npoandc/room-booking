@@ -106,7 +106,7 @@ body {
   color-scheme: dark;
 }
 
-main { padding: 1.25rem 1.5rem 2rem; max-width: 1200px; margin: 0 auto; }
+main { padding: 1.25rem 1.5rem 2rem; max-width: 1500px; margin: 0 auto; }
 
 .day-heading {
   margin: 0.25rem 0 0.9rem;
@@ -173,7 +173,7 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 1px 3px rgba(34, 38, 40, 0.05);
 }
 
-#grid { min-width: 860px; }
+#grid { min-width: 1000px; }
 
 .grid-row {
   display: grid;
@@ -184,7 +184,7 @@ input:focus, select:focus, textarea:focus {
 
 .room-label {
   padding: 0.85rem 1rem;
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--oc-purple);
   border-right: 1px solid var(--line);
@@ -194,7 +194,7 @@ input:focus, select:focus, textarea:focus {
 
 .time-header {
   display: grid;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--muted);
@@ -204,7 +204,7 @@ input:focus, select:focus, textarea:focus {
 .track {
   position: relative;
   display: grid;
-  min-height: 54px;
+  min-height: 74px;
 }
 
 .slot { border-left: 1px solid var(--line); cursor: pointer; }
@@ -220,8 +220,8 @@ input:focus, select:focus, textarea:focus {
   background: var(--oc-pink);
   color: #fff;
   border-radius: 8px;
-  padding: 0.3rem 0.6rem;
-  font-size: 0.78rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
   line-height: 1.25;
   overflow: hidden;
   cursor: pointer;
