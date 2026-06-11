@@ -147,6 +147,20 @@
     </div>
   </dialog>
 
+  <button type="button" id="history-btn" class="fab" title="Change and cancellation history">History</button>
+
+  <!-- Full change & cancellation log -->
+  <dialog id="history-modal">
+    <div class="manage">
+      <h2>History</h2>
+      <p class="history-sub">Every change and cancellation, newest first.</p>
+      <div id="history-list" class="history-list"></div>
+      <div class="actions">
+        <button type="button" class="ghost-btn" data-close>Close</button>
+      </div>
+    </div>
+  </dialog>
+
   <footer>Bookable Monday–Friday, 8:00 am – 6:00 pm</footer>
 
   <script src="config.js"></script>

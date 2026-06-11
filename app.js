@@ -99,6 +99,15 @@ async function supabaseStore() {
       if (error) return [];
       return data;
     },
+    async listAllChanges() {
+      const { data, error } = await client
+        .from("booking_changes")
+        .select("*, bookings(title)")
+        .order("changed_at", { ascending: false })
+        .limit(200);
+      if (error) throw new Error(error.message);
+      return data.map((c) => ({ ...c, title: c.bookings?.title || "" }));
+    },
   };
 }
 
@@ -224,6 +233,17 @@ function demoStore() {
     },
     async history(id) {
       return load().changes.filter((c) => c.booking_id === id);
+    },
+    async listAllChanges() {
+      const db = load();
+      return db.changes
+        .slice()
+        .reverse()
+        .slice(0, 200)
+        .map((c) => ({
+          ...c,
+          title: db.bookings.find((b) => b.id === c.booking_id)?.title || "",
+        }));
     },
   };
 }
@@ -628,6 +648,60 @@ async function submitCancelForm(event) {
   }
 }
 
+// ── History (full change & cancellation log) ────────────────────────
+
+function shortDay(d) {
+  return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+}
+
+function slotText(room, startIso, endIso) {
+  const s = new Date(startIso), e = new Date(endIso);
+  return `${room}, ${shortDay(s)}, ${fmtTime(s)}–${fmtTime(e)}`;
+}
+
+async function openHistoryModal() {
+  const list = $("#history-list");
+  list.innerHTML = "";
+  let changes = [];
+  try {
+    changes = await store.listAllChanges();
+  } catch (err) {
+    list.innerHTML = `<p class="history-empty">Could not load the history: ${err.message}</p>`;
+  }
+  if (!changes.length && !list.innerHTML) {
+    list.innerHTML = `<p class="history-empty">No changes or cancellations yet.</p>`;
+  }
+  for (const c of changes) {
+    const entry = document.createElement("div");
+    entry.className = "history-entry";
+
+    const head = document.createElement("div");
+    head.className = "h-head";
+    const verb = document.createElement("span");
+    verb.className = c.action === "cancel" ? "h-cancel" : "h-change";
+    verb.textContent = c.action === "cancel" ? "Cancelled" : "Changed";
+    head.appendChild(verb);
+    let headText = ` — ${slotText(c.old_room, c.old_starts_at, c.old_ends_at)}`;
+    if (c.action === "change") {
+      headText += ` → ${slotText(c.new_room, c.new_starts_at, c.new_ends_at)}`;
+    }
+    if (c.title) headText += ` — “${c.title}”`;
+    head.appendChild(document.createTextNode(headText));
+
+    const meta = document.createElement("div");
+    meta.className = "h-meta";
+    const when = new Date(c.changed_at).toLocaleString("en-GB", {
+      day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+    });
+    meta.textContent = `by ${c.changed_by}: “${c.reason}” · ${when}`;
+
+    entry.appendChild(head);
+    entry.appendChild(meta);
+    list.appendChild(entry);
+  }
+  $("#history-modal").showModal();
+}
+
 // ── Add to my calendar (.ics download) ──────────────────────────────
 
 function icsEscape(s) {
@@ -757,6 +831,8 @@ async function init() {
   });
 
   $("#notice-ok").addEventListener("click", () => $("#notice").classList.add("hidden"));
+
+  $("#history-btn").addEventListener("click", openHistoryModal);
 
   $("#m-ics-btn").addEventListener("click", () => {
     $("#cal-menu").classList.toggle("hidden");
