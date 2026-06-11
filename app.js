@@ -278,6 +278,7 @@ function fmtDayLong(d) {
 // ── State ───────────────────────────────────────────────────────────
 
 let store;
+let viewMode = localStorage.getItem("view-mode") === "week" ? "week" : "day";
 let currentDate = new Date();
 currentDate.setHours(0, 0, 0, 0);
 let dayBookings = [];
@@ -288,6 +289,15 @@ let managedBooking = null; // booking shown in the manage modal
 
 async function render() {
   $("#date-picker").value = toDateInput(currentDate);
+  $("#view-day").classList.toggle("active", viewMode === "day");
+  $("#view-week").classList.toggle("active", viewMode === "week");
+  $("#hint").textContent =
+    viewMode === "week"
+      ? "Click a booking to change or cancel it. Click a day or an empty space to open that day."
+      : "Click an empty slot to book it. Click a booking to change or cancel it.";
+
+  if (viewMode === "week") return renderWeek();
+
   $("#day-heading").textContent = fmtDayLong(currentDate);
 
   const grid = $("#grid");
@@ -375,6 +385,93 @@ async function render() {
     }
 
     row.appendChild(track);
+    grid.appendChild(row);
+  }
+}
+
+async function renderWeek() {
+  $("#grid-wrap").classList.remove("hidden");
+  $("#closed-msg").classList.add("hidden");
+
+  // Monday of the week containing currentDate
+  const monday = new Date(currentDate);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const friday = new Date(monday);
+  friday.setDate(friday.getDate() + 4);
+  const weekEnd = new Date(monday);
+  weekEnd.setDate(weekEnd.getDate() + 5);
+
+  $("#day-heading").textContent =
+    `Monday ${monday.getDate()} ${monday.toLocaleDateString("en-GB", { month: "long" })}` +
+    ` – Friday ${friday.getDate()} ${friday.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`;
+
+  let weekBookings = [];
+  try {
+    weekBookings = await store.list(monday, weekEnd);
+  } catch (err) {
+    showBanner(`Could not load bookings: ${err.message}`);
+  }
+
+  const todayStr = toDateInput(new Date());
+  const grid = $("#grid");
+  grid.innerHTML = "";
+
+  const gotoDay = (d) => {
+    currentDate = new Date(d);
+    viewMode = "day";
+    localStorage.setItem("view-mode", "day");
+    render();
+  };
+
+  // header row: weekday names
+  const header = document.createElement("div");
+  header.className = "week-row";
+  header.appendChild(Object.assign(document.createElement("div"), { className: "room-label" }));
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(monday);
+    d.setDate(d.getDate() + i);
+    const h = document.createElement("button");
+    h.type = "button";
+    h.className = "week-day-header" + (toDateInput(d) === todayStr ? " today" : "");
+    h.textContent = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+    h.addEventListener("click", () => gotoDay(d));
+    header.appendChild(h);
+  }
+  grid.appendChild(header);
+
+  for (const room of ROOMS) {
+    const row = document.createElement("div");
+    row.className = "week-row";
+    const label = document.createElement("div");
+    label.className = "room-label";
+    label.textContent = room;
+    row.appendChild(label);
+
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(monday);
+      d.setDate(d.getDate() + i);
+      const dStr = toDateInput(d);
+      const cell = document.createElement("div");
+      cell.className = "week-cell" + (dStr === todayStr ? " today" : "");
+      cell.addEventListener("click", () => gotoDay(d));
+
+      const cellBookings = weekBookings
+        .filter((b) => b.room === room && toDateInput(b.start) === dStr)
+        .sort((a, b) => a.start - b.start);
+      for (const b of cellBookings) {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "week-chip";
+        chip.textContent = `${b.seriesId ? "↻ " : ""}${fmtTime(b.start)} ${b.title}`;
+        chip.title = `${fmtTime(b.start)}–${fmtTime(b.end)} · ${b.title} · ${b.bookedBy}`;
+        chip.addEventListener("click", (e) => {
+          e.stopPropagation();
+          openManageModal(b);
+        });
+        cell.appendChild(chip);
+      }
+      row.appendChild(cell);
+    }
     grid.appendChild(row);
   }
 }
@@ -797,6 +894,8 @@ async function init() {
 
   $("#prev-day").addEventListener("click", () => shiftDay(-1));
   $("#next-day").addEventListener("click", () => shiftDay(1));
+  $("#view-day").addEventListener("click", () => setViewMode("day"));
+  $("#view-week").addEventListener("click", () => setViewMode("week"));
   $("#today-btn").addEventListener("click", () => {
     currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
@@ -863,7 +962,13 @@ async function init() {
 }
 
 function shiftDay(delta) {
-  currentDate.setDate(currentDate.getDate() + delta);
+  currentDate.setDate(currentDate.getDate() + delta * (viewMode === "week" ? 7 : 1));
+  render();
+}
+
+function setViewMode(mode) {
+  viewMode = mode;
+  localStorage.setItem("view-mode", mode);
   render();
 }
 

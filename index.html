@@ -20,9 +20,13 @@
       <span class="app-name">Room Bookings</span>
     </h1>
     <div class="date-controls">
-      <button id="prev-day" class="icon-btn" title="Previous day" aria-label="Previous day">‹</button>
+      <div class="view-toggle">
+        <button id="view-day" class="ghost-btn">Day</button>
+        <button id="view-week" class="ghost-btn">Week</button>
+      </div>
+      <button id="prev-day" class="icon-btn" title="Previous" aria-label="Previous">‹</button>
       <button id="today-btn" class="ghost-btn">Today</button>
-      <button id="next-day" class="icon-btn" title="Next day" aria-label="Next day">›</button>
+      <button id="next-day" class="icon-btn" title="Next" aria-label="Next">›</button>
       <input type="date" id="date-picker">
     </div>
   </header>
@@ -37,7 +41,7 @@
       <div id="grid"></div>
     </div>
     <p id="closed-msg" class="closed-msg hidden">Rooms are bookable Monday to Friday, 8:00&nbsp;am – 6:00&nbsp;pm. Pick a weekday to make a booking.</p>
-    <p class="hint">Click an empty slot to book it. Click a booking to change or cancel it.</p>
+    <p class="hint" id="hint">Click an empty slot to book it. Click a booking to change or cancel it.</p>
   </main>
 
   <!-- Create / edit booking -->
