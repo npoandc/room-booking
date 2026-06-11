@@ -439,6 +439,7 @@ footer {
 .history-entry .h-head { font-weight: 600; color: var(--oc-purple); }
 .history-entry .h-head .h-cancel { color: var(--danger); }
 .history-entry .h-head .h-change { color: var(--oc-pink); }
+.history-entry .h-head .h-create { color: var(--oc-green); }
 .history-entry .h-meta { color: var(--muted); }
 .history-empty { color: var(--muted); padding: 1rem 0; }
 

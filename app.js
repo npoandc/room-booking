@@ -27,6 +27,7 @@ function normalize(row) {
     start: new Date(row.starts_at),
     end: new Date(row.ends_at),
     seriesId: row.series_id || null,
+    createdAt: row.created_at ? new Date(row.created_at) : null,
   };
 }
 
@@ -100,13 +101,29 @@ async function supabaseStore() {
       return data;
     },
     async listAllChanges() {
-      const { data, error } = await client
-        .from("booking_changes")
-        .select("*, bookings(title)")
-        .order("changed_at", { ascending: false })
-        .limit(200);
-      if (error) throw new Error(error.message);
-      return data.map((c) => ({ ...c, title: c.bookings?.title || "" }));
+      const [changesRes, createdRes] = await Promise.all([
+        client
+          .from("booking_changes")
+          .select("*, bookings(title)")
+          .order("changed_at", { ascending: false })
+          .limit(200),
+        client
+          .from("bookings")
+          .select("room, title, booked_by, starts_at, ends_at, created_at")
+          .order("created_at", { ascending: false })
+          .limit(200),
+      ]);
+      if (changesRes.error) throw new Error(changesRes.error.message);
+      if (createdRes.error) throw new Error(createdRes.error.message);
+      const changes = changesRes.data.map((c) => ({ ...c, title: c.bookings?.title || "" }));
+      const creates = createdRes.data.map((b) => ({
+        action: "create", changed_at: b.created_at, changed_by: b.booked_by,
+        reason: null, old_room: b.room, old_starts_at: b.starts_at,
+        old_ends_at: b.ends_at, title: b.title,
+      }));
+      return [...changes, ...creates]
+        .sort((a, b) => new Date(b.changed_at) - new Date(a.changed_at))
+        .slice(0, 200);
     },
   };
 }
@@ -147,6 +164,7 @@ function demoStore() {
         id: crypto.randomUUID(), room: b.room, title: b.title,
         booked_by: b.bookedBy, starts_at: b.start.toISOString(),
         ends_at: b.end.toISOString(), status: "active",
+        created_at: new Date().toISOString(),
       });
       save(db);
     },
@@ -170,6 +188,7 @@ function demoStore() {
           id: crypto.randomUUID(), room: b.room, title: b.title,
           booked_by: b.bookedBy, starts_at: start.toISOString(),
           ends_at: end.toISOString(), status: "active", series_id: seriesId,
+          created_at: new Date().toISOString(),
         });
         created.push(toDateInput(start));
       }
@@ -236,14 +255,20 @@ function demoStore() {
     },
     async listAllChanges() {
       const db = load();
-      return db.changes
-        .slice()
-        .reverse()
-        .slice(0, 200)
-        .map((c) => ({
-          ...c,
-          title: db.bookings.find((b) => b.id === c.booking_id)?.title || "",
+      const changes = db.changes.map((c) => ({
+        ...c,
+        title: db.bookings.find((b) => b.id === c.booking_id)?.title || "",
+      }));
+      const creates = db.bookings
+        .filter((b) => b.created_at)
+        .map((b) => ({
+          action: "create", changed_at: b.created_at, changed_by: b.booked_by,
+          reason: null, old_room: b.room, old_starts_at: b.starts_at,
+          old_ends_at: b.ends_at, title: b.title,
         }));
+      return [...changes, ...creates]
+        .sort((a, b) => new Date(b.changed_at) - new Date(a.changed_at))
+        .slice(0, 200);
     },
   };
 }
@@ -676,6 +701,11 @@ async function openManageModal(booking) {
     ["When", `${fmtDayLong(booking.start)}, ${fmtTime(booking.start)}–${fmtTime(booking.end)}`],
     ["Booked by", booking.bookedBy],
   ];
+  if (booking.createdAt) {
+    lines.push(["Added", booking.createdAt.toLocaleString("en-GB", {
+      day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+    })]);
+  }
   for (const [k, v] of lines) {
     const p = document.createElement("span");
     const strong = document.createElement("strong");
@@ -775,8 +805,10 @@ async function openHistoryModal() {
     const head = document.createElement("div");
     head.className = "h-head";
     const verb = document.createElement("span");
-    verb.className = c.action === "cancel" ? "h-cancel" : "h-change";
-    verb.textContent = c.action === "cancel" ? "Cancelled" : "Changed";
+    verb.className =
+      c.action === "cancel" ? "h-cancel" : c.action === "create" ? "h-create" : "h-change";
+    verb.textContent =
+      c.action === "cancel" ? "Cancelled" : c.action === "create" ? "Booked" : "Changed";
     head.appendChild(verb);
     let headText = ` — ${slotText(c.old_room, c.old_starts_at, c.old_ends_at)}`;
     if (c.action === "change") {
@@ -790,7 +822,9 @@ async function openHistoryModal() {
     const when = new Date(c.changed_at).toLocaleString("en-GB", {
       day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
     });
-    meta.textContent = `by ${c.changed_by}: “${c.reason}” · ${when}`;
+    meta.textContent = c.reason
+      ? `by ${c.changed_by}: “${c.reason}” · ${when}`
+      : `by ${c.changed_by} · ${when}`;
 
     entry.appendChild(head);
     entry.appendChild(meta);
