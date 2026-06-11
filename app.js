@@ -727,7 +727,7 @@ async function openManageModal(booking) {
     for (const c of changes) {
       const p = document.createElement("p");
       const when = new Date(c.changed_at).toLocaleString("en-GB", {
-        day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+        day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
       });
       p.textContent =
         c.action === "cancel"
@@ -820,7 +820,7 @@ async function openHistoryModal() {
     const meta = document.createElement("div");
     meta.className = "h-meta";
     const when = new Date(c.changed_at).toLocaleString("en-GB", {
-      day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+      day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
     });
     meta.textContent = c.reason
       ? `by ${c.changed_by}: “${c.reason}” · ${when}`
