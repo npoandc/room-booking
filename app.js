@@ -487,7 +487,7 @@ async function renderWeek() {
         const chip = document.createElement("button");
         chip.type = "button";
         chip.className = "week-chip";
-        chip.textContent = `${b.seriesId ? "↻ " : ""}${fmtTime(b.start)} ${b.title}`;
+        chip.textContent = `${b.seriesId ? "↻ " : ""}${fmtTime(b.start)}–${fmtTime(b.end)} ${b.title}`;
         chip.title = `${fmtTime(b.start)}–${fmtTime(b.end)} · ${b.title} · ${b.bookedBy}`;
         chip.addEventListener("click", (e) => {
           e.stopPropagation();
