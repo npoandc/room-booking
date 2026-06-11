@@ -13,7 +13,7 @@ const ROOMS = [
 
 const OPEN_MIN = 8 * 60;    // 08:00
 const CLOSE_MIN = 18 * 60;  // 18:00
-const SLOT_MIN = 30;
+const SLOT_MIN = 15;
 const DAY_SPAN = CLOSE_MIN - OPEN_MIN;
 
 // ── Storage layer ───────────────────────────────────────────────────
@@ -383,7 +383,8 @@ async function render() {
     for (let i = 0; i < slotCount; i++) {
       const mins = OPEN_MIN + i * SLOT_MIN;
       const slot = document.createElement("div");
-      slot.className = "slot" + (mins % 60 !== 0 ? " half" : "");
+      slot.className =
+        "slot" + (mins % 60 === 0 ? "" : mins % 30 === 0 ? " half" : " quarter");
       const slotEnd = dateAt(toDateInput(currentDate), mins + SLOT_MIN);
       if (slotEnd <= now) {
         slot.classList.add("past");

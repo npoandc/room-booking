@@ -183,7 +183,7 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 1px 3px rgba(34, 38, 40, 0.05);
 }
 
-#grid { min-width: 1000px; }
+#grid { min-width: 1100px; }
 
 .grid-row {
   display: grid;
@@ -219,6 +219,7 @@ input:focus, select:focus, textarea:focus {
 
 .slot { border-left: 1px solid var(--line); cursor: pointer; }
 .slot.half { border-left-style: dotted; border-left-color: #f0f2f4; }
+.slot.quarter { border-left-color: transparent; }
 .slot:hover { background: var(--oc-pink-soft); }
 .slot.past { background: #f3f4f5; cursor: default; }
 .slot.past:hover { background: #f3f4f5; }
