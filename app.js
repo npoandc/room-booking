@@ -11,6 +11,31 @@ const ROOMS = [
   "Hoole Meeting Room",
 ];
 
+// Each room gets its own Oliver & Co brand colour: [background, text]
+const ROOM_COLOURS = {
+  "Board Room": ["#ab1365", "#ffffff"],        // pink
+  "Room 1": ["#2e4057", "#ffffff"],            // blue
+  "Room 2": ["#2e5556", "#ffffff"],            // green
+  "Room 3": ["#311b3a", "#ffffff"],            // purple
+  "David Owen Suite": ["#dbb75a", "#222628"],  // yellow (granite text)
+  "Hoole Meeting Room": ["#222628", "#ffffff"],// granite
+};
+
+function roomColours(room) {
+  return ROOM_COLOURS[room] || ["#ab1365", "#ffffff"];
+}
+
+function roomLabelEl(room) {
+  const label = document.createElement("div");
+  label.className = "room-label";
+  const dot = document.createElement("span");
+  dot.className = "room-dot";
+  dot.style.background = roomColours(room)[0];
+  label.appendChild(dot);
+  label.appendChild(document.createTextNode(room));
+  return label;
+}
+
 const OPEN_MIN = 8 * 60;    // 08:00
 const CLOSE_MIN = 18 * 60;  // 18:00
 const SLOT_MIN = 15;
@@ -371,10 +396,7 @@ async function render() {
     const row = document.createElement("div");
     row.className = "grid-row";
 
-    const label = document.createElement("div");
-    label.className = "room-label";
-    label.textContent = room;
-    row.appendChild(label);
+    row.appendChild(roomLabelEl(room));
 
     const track = document.createElement("div");
     track.className = "track";
@@ -400,6 +422,9 @@ async function render() {
       const block = document.createElement("button");
       block.type = "button";
       block.className = "booking-block";
+      const [bg, fg] = roomColours(room);
+      block.style.background = bg;
+      block.style.color = fg;
       block.style.left = `${((startM - OPEN_MIN) / DAY_SPAN) * 100}%`;
       block.style.width = `${((endM - startM) / DAY_SPAN) * 100}%`;
       block.innerHTML = `<span class="what"></span><span class="who"></span>`;
@@ -468,10 +493,7 @@ async function renderWeek() {
   for (const room of ROOMS) {
     const row = document.createElement("div");
     row.className = "week-row";
-    const label = document.createElement("div");
-    label.className = "room-label";
-    label.textContent = room;
-    row.appendChild(label);
+    row.appendChild(roomLabelEl(room));
 
     for (let i = 0; i < 5; i++) {
       const d = new Date(monday);
@@ -488,6 +510,9 @@ async function renderWeek() {
         const chip = document.createElement("button");
         chip.type = "button";
         chip.className = "week-chip";
+        const [bg, fg] = roomColours(room);
+        chip.style.background = bg;
+        chip.style.color = fg;
         chip.textContent = `${b.seriesId ? "↻ " : ""}${fmtTime(b.start)}–${fmtTime(b.end)} ${b.title}`;
         chip.title = `${fmtTime(b.start)}–${fmtTime(b.end)} · ${b.title} · ${b.bookedBy}`;
         chip.addEventListener("click", (e) => {

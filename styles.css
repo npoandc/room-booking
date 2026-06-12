@@ -13,8 +13,8 @@
   --accent: var(--oc-pink);
   --ink: var(--oc-granite);
   --muted: #6e757a;
-  --line: #e6e9ec;
-  --bg: var(--oc-grey);
+  --line: #ececec;
+  --bg: #ffffff;
   --warn-bg: #faf4e3;
   --warn-line: #e9d9ac;
   --warn-ink: #6e561a;
@@ -46,29 +46,19 @@ body {
   border-bottom: 1px solid var(--warn-line);
 }
 
-/* ---- header: Oliver & Co purple with thin-circle brand motif ---- */
+/* ---- header: bright & airy, white with the wordmark in brand colours ---- */
 .topbar {
   position: relative;
-  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.9rem;
   padding: 1.1rem 1.5rem;
-  background: var(--oc-purple);
-  color: #fff;
+  background: #fff;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
 }
-/* outlined circles, as on p.16 of the guidelines */
-.topbar::before, .topbar::after {
-  content: "";
-  position: absolute;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255, 255, 255, 0.16);
-  pointer-events: none;
-}
-.topbar::before { width: 190px; height: 190px; right: -55px; top: -95px; }
-.topbar::after { width: 130px; height: 130px; right: 110px; bottom: -85px; }
 
 .brand { display: flex; align-items: baseline; gap: 0.8rem; z-index: 1; margin: 0; }
 .wordmark {
@@ -76,15 +66,15 @@ body {
   font-weight: 700;
   font-size: 1.45rem;
   letter-spacing: 0.01em;
-  color: #fff;
+  color: var(--oc-purple);
 }
-.wordmark em { font-style: normal; color: var(--oc-yellow); }
+.wordmark em { font-style: normal; color: var(--oc-pink); }
 .app-name {
   font-size: 0.86rem;
   font-weight: 400;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--muted);
 }
 
 .date-controls { display: flex; align-items: center; gap: 0.4rem; z-index: 1; flex-wrap: wrap; }
@@ -93,37 +83,30 @@ body {
 .view-toggle .ghost-btn { border-radius: 999px 0 0 999px; }
 .view-toggle .ghost-btn + .ghost-btn { border-radius: 0 999px 999px 0; border-left: none; }
 .date-controls .view-toggle .ghost-btn.active {
-  background: #fff;
+  background: var(--oc-grey);
   color: var(--oc-purple);
-  border-color: #fff;
+  border-color: #ddd;
   font-weight: 600;
 }
-.date-controls .icon-btn, .date-controls .ghost-btn {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  color: #fff;
-}
-.date-controls .icon-btn:hover, .date-controls .ghost-btn:hover {
-  border-color: #fff;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.08);
-}
-.date-controls input[type="date"] {
-  width: auto;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  color: #fff;
-  color-scheme: dark;
-}
+.date-controls input[type="date"] { width: auto; }
 
 main { padding: 1.25rem 1.5rem 2rem; max-width: 1500px; margin: 0 auto; }
 
 .day-heading {
   margin: 0.25rem 0 0.9rem;
   font-family: var(--serif);
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: var(--oc-purple);
+}
+/* yellow accent bar, echoing the brand's accent-only yellow */
+.day-heading::after {
+  content: "";
+  display: block;
+  width: 52px;
+  height: 3px;
+  background: var(--oc-yellow);
+  margin-top: 0.4rem;
 }
 
 /* ---- buttons & inputs ---- */
@@ -180,7 +163,6 @@ input:focus, select:focus, textarea:focus {
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 14px;
-  box-shadow: 0 1px 3px rgba(34, 38, 40, 0.05);
 }
 
 #grid { min-width: 1100px; }
@@ -239,7 +221,16 @@ input:focus, select:focus, textarea:focus {
   border: none;
   text-align: left;
 }
-.booking-block:hover { background: var(--oc-pink-dark); }
+.booking-block:hover { filter: brightness(0.88); }
+
+.room-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  flex: none;
+}
 .booking-block .who { opacity: 0.85; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .booking-block .what { font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
@@ -294,7 +285,7 @@ input:focus, select:focus, textarea:focus {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.week-chip:hover { background: var(--oc-pink-dark); }
+.week-chip:hover { filter: brightness(0.88); }
 
 .closed-msg { color: var(--muted); padding: 2rem 0; text-align: center; }
 .hint { color: var(--muted); font-size: 0.82rem; margin-top: 0.75rem; }
