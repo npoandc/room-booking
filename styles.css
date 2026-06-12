@@ -21,8 +21,8 @@
   --danger: #b3362c;
   --danger-bg: #fdecea;
 
-  /* Bookmania (licensed) for headers when installed; Bookman/Georgia otherwise */
-  --serif: "Bookmania", "Bookman Old Style", Georgia, serif;
+  /* Bookmania from the company Adobe Fonts kit; Bookman/Georgia as fallback */
+  --serif: "bookmania", "Bookman Old Style", Georgia, serif;
   --sans: "Hanken Grotesk", "Helvetica Neue", -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 16px;
 }
@@ -60,15 +60,9 @@ body {
   border-bottom: 1px solid var(--line);
 }
 
-.brand { display: flex; align-items: baseline; gap: 0.8rem; z-index: 1; margin: 0; }
-.wordmark {
-  font-family: var(--serif);
-  font-weight: 700;
-  font-size: 1.45rem;
-  letter-spacing: 0.01em;
-  color: var(--oc-purple);
-}
-.wordmark em { font-style: normal; color: var(--oc-pink); }
+.brand { display: flex; align-items: center; gap: 0.9rem; z-index: 1; margin: 0; }
+/* brand guide: minimum 30px logo height on the web */
+.logo { height: 40px; width: auto; display: block; }
 .app-name {
   font-size: 0.86rem;
   font-weight: 400;
