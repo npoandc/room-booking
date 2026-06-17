@@ -3,14 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Oliver &amp; Co — Room Bookings</title>
+  <title>Oliver &amp; Co — Hoole Desk Bookings</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300..700;1,400&display=swap" rel="stylesheet">
-  <!-- Bookmania via the company's Adobe Fonts subscription (same kit as oliverandco.co.uk) -->
   <link rel="stylesheet" href="https://use.typekit.net/lzp6apa.css">
   <link rel="stylesheet" href="styles.css">
-  <!-- the singular 'O' favicon, per the brand guidelines -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='39' fill='none' stroke='%23ab1365' stroke-width='22'/></svg>">
 </head>
 <body>
@@ -19,10 +17,10 @@
   <header class="topbar">
     <h1 class="brand">
       <img src="assets/oliverco-logo.png" alt="Oliver &amp; Co Solicitors" class="logo">
-      <span class="app-name">Room Bookings</span>
+      <span class="app-name">Hoole Desk Bookings</span>
     </h1>
     <div class="date-controls">
-      <a class="ghost-btn page-link" href="desks.html">Hoole desks →</a>
+      <a class="ghost-btn page-link" href="index.html">← Meeting rooms</a>
       <div class="view-toggle">
         <button id="view-day" class="ghost-btn">Day</button>
         <button id="view-week" class="ghost-btn">Week</button>
@@ -43,51 +41,30 @@
     <div id="grid-wrap" class="grid-wrap">
       <div id="grid"></div>
     </div>
-    <p id="closed-msg" class="closed-msg hidden">Rooms are bookable Monday to Friday, 8:00&nbsp;am – 6:00&nbsp;pm. Pick a weekday to make a booking.</p>
-    <p class="hint" id="hint">Click an empty slot to book it. Click a booking to change or cancel it.</p>
+    <p id="closed-msg" class="closed-msg hidden">Desks are bookable Monday to Friday. Pick a weekday to make a booking.</p>
+    <p class="hint" id="hint">Click a free desk to book it for the day. Click a booking to change or cancel it.</p>
   </main>
 
   <!-- Create / edit booking -->
   <dialog id="booking-modal">
     <form id="booking-form" method="dialog" novalidate>
-      <h2 id="booking-modal-title">New booking</h2>
-
-      <label>Room
-        <select id="f-room" required></select>
-      </label>
+      <h2 id="booking-modal-title">Book a desk</h2>
 
       <div class="row">
+        <label>Desk
+          <select id="f-desk" required></select>
+        </label>
         <label>Date
           <input type="date" id="f-date" required>
         </label>
-        <label>From
-          <select id="f-start" required></select>
-        </label>
-        <label>To
-          <select id="f-end" required></select>
-        </label>
       </div>
-
-      <div class="row repeat-row" id="repeat-row">
-        <label>Repeats
-          <select id="f-repeat">
-            <option value="">Does not repeat</option>
-            <option value="7">Every week</option>
-            <option value="14">Every 2 weeks</option>
-            <option value="28">Every 4 weeks</option>
-          </select>
-        </label>
-        <label id="f-until-label" class="hidden">Last date
-          <input type="date" id="f-until">
-        </label>
-      </div>
-
-      <label>Purpose
-        <input type="text" id="f-title" placeholder="e.g. Team meeting" maxlength="120" required>
-      </label>
 
       <label>Your name
         <input type="text" id="f-name" placeholder="e.g. Jane Smith" maxlength="80" required>
+      </label>
+
+      <label>Note <span class="optional">(optional)</span>
+        <input type="text" id="f-note" placeholder="e.g. In for the morning only" maxlength="120">
       </label>
 
       <div id="edit-only" class="edit-only hidden">
@@ -95,7 +72,7 @@
           <input type="text" id="f-changed-by" placeholder="Your name" maxlength="80">
         </label>
         <label>Reason for the change
-          <textarea id="f-reason" rows="2" placeholder="e.g. Meeting moved to the afternoon" maxlength="300"></textarea>
+          <textarea id="f-reason" rows="2" placeholder="e.g. Swapping to a quieter desk" maxlength="300"></textarea>
         </label>
       </div>
 
@@ -104,7 +81,7 @@
 
       <div class="actions">
         <button type="button" class="ghost-btn" data-close>Close</button>
-        <button type="submit" class="primary-btn" id="booking-submit">Book room</button>
+        <button type="submit" class="primary-btn" id="booking-submit">Book desk</button>
       </div>
     </form>
   </dialog>
@@ -113,7 +90,6 @@
   <dialog id="manage-modal">
     <div class="manage">
       <h2 id="m-title"></h2>
-      <p id="m-series" class="series-note hidden">↻ Part of a repeating series</p>
       <p id="m-details" class="details"></p>
       <div id="m-history" class="history"></div>
 
@@ -134,17 +110,13 @@
       </div>
 
       <form id="cancel-form" class="cancel-form hidden" novalidate>
-        <h3>Cancel this booking</h3>
+        <h3>Cancel this desk booking</h3>
         <label>Who is cancelling it?
           <input type="text" id="c-name" placeholder="Your name" maxlength="80" required>
         </label>
         <label>Reason for cancelling
-          <textarea id="c-reason" rows="2" placeholder="e.g. Meeting no longer needed" maxlength="300" required></textarea>
+          <textarea id="c-reason" rows="2" placeholder="e.g. Working from home that day" maxlength="300" required></textarea>
         </label>
-        <div id="c-scope" class="scope hidden">
-          <label class="radio"><input type="radio" name="cscope" value="one" checked> Cancel just this booking</label>
-          <label class="radio"><input type="radio" name="cscope" value="future"> Cancel this and all future repeats</label>
-        </div>
         <div id="cancel-error" class="error hidden" role="alert"></div>
         <div class="actions">
           <button type="button" class="ghost-btn" id="c-back">Keep booking</button>
@@ -156,11 +128,10 @@
 
   <button type="button" id="history-btn" class="fab" title="Change and cancellation history">History</button>
 
-  <!-- Full change & cancellation log -->
   <dialog id="history-modal">
     <div class="manage">
       <h2>History</h2>
-      <p class="history-sub">Every booking, change and cancellation, newest first.</p>
+      <p class="history-sub">Every desk booking, change and cancellation, newest first.</p>
       <div id="history-list" class="history-list"></div>
       <div class="actions">
         <button type="button" class="ghost-btn" data-close>Close</button>
@@ -168,9 +139,9 @@
     </div>
   </dialog>
 
-  <footer>Bookable Monday–Friday, 8:00 am – 6:00 pm</footer>
+  <footer>Hoole office · desks bookable Monday–Friday</footer>
 
   <script src="config.js"></script>
-  <script type="module" src="app.js"></script>
+  <script type="module" src="desks.js"></script>
 </body>
 </html>

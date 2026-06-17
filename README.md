@@ -75,9 +75,15 @@ Until it's configured the sync job simply does nothing, so there's no rush.
 
 | Piece | Where | Job |
 |---|---|---|
-| Website (`index.html`, `app.js`, `styles.css`) | GitHub Pages | The booking interface |
+| Room booking (`index.html`, `app.js`, `styles.css`) | GitHub Pages | The room booking interface |
+| Desk booking (`desks.html`, `desks.js`) | GitHub Pages | Full-day desk booking for the Hoole office |
 | Bookings database | Supabase (free tier) | Stores bookings + change history, enforces all rules |
-| Outlook sync (`scripts/outlook-sync.mjs`) | GitHub Actions | Mirrors bookings into the shared calendar |
+| Outlook sync (`scripts/outlook-sync.mjs`) | GitHub Actions | Mirrors room bookings into the shared calendar |
+
+The desk page lives at `…/room-booking/desks.html` and is linked from the room
+page (and back). Its database tables come from
+[`supabase/desks-schema.sql`](supabase/desks-schema.sql) — run that once in the
+Supabase SQL editor, the same way as the main schema.
 
 Changing the rooms, hours, or time-slot size: edit the constants at the top of
 [`app.js`](app.js) and the matching room list / hours in
