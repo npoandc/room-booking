@@ -1148,9 +1148,6 @@ async function init() {
   });
   $("#cal-outlook").addEventListener("click", () =>
     window.open(outlookUrl(managedBooking), "_blank", "noopener"));
-  $("#cal-google").addEventListener("click", () =>
-    window.open(googleUrl(managedBooking), "_blank", "noopener"));
-  $("#cal-file").addEventListener("click", () => downloadIcs(managedBooking));
   $("#invite-send").addEventListener("click", () => {
     const emails = parseEmails($("#invite-emails").value);
     if (!emails.length) {
