@@ -68,7 +68,7 @@
         <input type="text" id="f-note" placeholder="e.g. In for the morning only" maxlength="120">
       </label>
 
-      <label id="f-invite-field">Invite people by email <span class="optional">(optional — for booking on someone's behalf)</span>
+      <label id="f-invite-field">Invite people by email <span class="optional">(optional — Oliver & Co addresses only)</span>
         <input type="text" id="f-invite" placeholder="e.g. jane@oliverandco.co.uk, tom@oliverandco.co.uk" maxlength="400">
       </label>
 
@@ -113,9 +113,10 @@
         <div class="invite-row">
           <label class="cal-menu-label" for="invite-emails">Or email an invite to other people:</label>
           <div class="invite-controls">
-            <input type="text" id="invite-emails" placeholder="Email addresses, comma separated" maxlength="400">
+            <input type="text" id="invite-emails" placeholder="Oliver & Co emails, comma separated" maxlength="400">
             <button type="button" class="ghost-btn" id="invite-send">Email invite</button>
           </div>
+          <div id="invite-error" class="error hidden" role="alert"></div>
         </div>
       </div>
 

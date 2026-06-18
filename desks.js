@@ -577,7 +577,13 @@ async function submitBookingForm(event) {
   if (!name) return formError("Please enter your name.");
 
   const payload = { desk, bookedBy: name, note, date: dateStr };
-  const inviteEmails = editingBooking ? [] : parseEmails($("#f-invite").value);
+  const { good: inviteEmails, bad: inviteBad } = editingBooking
+    ? { good: [], bad: [] }
+    : splitEmails($("#f-invite").value);
+  if (inviteBad.length)
+    return formError(
+      `Invites can only be sent to Oliver & Co email addresses (…${EMAIL_DOMAIN}). Please remove: ${inviteBad.join(", ")}`
+    );
   const submitBtn = $("#booking-submit");
   submitBtn.disabled = true;
   try {
@@ -659,6 +665,7 @@ async function openManageModal(booking) {
   $("#cancel-error").classList.add("hidden");
   $("#cal-menu").classList.add("hidden");
   $("#invite-emails").value = "";
+  $("#invite-error").classList.add("hidden");
   $("#c-name").value = localStorage.getItem("my-name") || "";
   $("#c-reason").value = "";
   $("#manage-modal").showModal();
@@ -795,8 +802,18 @@ function googleUrl(b) {
   return `https://calendar.google.com/calendar/render?${q}`;
 }
 
+const EMAIL_DOMAIN = "@oliverandco.co.uk";
+
 function parseEmails(str) {
   return (str || "").split(/[,;\s]+/).map((s) => s.trim()).filter((s) => s.includes("@"));
+}
+
+function splitEmails(str) {
+  const good = [], bad = [];
+  for (const e of parseEmails(str)) {
+    (e.toLowerCase().endsWith(EMAIL_DOMAIN) ? good : bad).push(e);
+  }
+  return { good, bad };
 }
 
 // Opens the assistant's own email client with a ready-to-send invite.
@@ -864,9 +881,16 @@ async function init() {
   $("#m-ics-btn").addEventListener("click", () => $("#cal-menu").classList.toggle("hidden"));
   $("#cal-outlook").addEventListener("click", () => window.open(outlookUrl(managedBooking), "_blank", "noopener"));
   $("#invite-send").addEventListener("click", () => {
-    const emails = parseEmails($("#invite-emails").value);
-    if (!emails.length) { $("#invite-emails").focus(); return; }
-    window.location.href = inviteMailto(managedBooking, emails);
+    const { good, bad } = splitEmails($("#invite-emails").value);
+    const err = $("#invite-error");
+    if (bad.length) {
+      err.textContent = `Only Oliver & Co addresses (…${EMAIL_DOMAIN}) can be invited. Please remove: ${bad.join(", ")}`;
+      err.classList.remove("hidden");
+      return;
+    }
+    if (!good.length) { $("#invite-emails").focus(); return; }
+    err.classList.add("hidden");
+    window.location.href = inviteMailto(managedBooking, good);
   });
 
   $("#m-change-btn").addEventListener("click", () => {
