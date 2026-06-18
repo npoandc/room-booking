@@ -203,7 +203,9 @@ function shortDay(d) {
 // ── State ───────────────────────────────────────────────────────────
 
 let store;
-let viewMode = localStorage.getItem("desk-view-mode") === "day" ? "day" : "week";
+let viewMode = ["day", "month"].includes(localStorage.getItem("desk-view-mode"))
+  ? localStorage.getItem("desk-view-mode")
+  : "week";
 let currentDate = new Date();
 currentDate.setHours(0, 0, 0, 0);
 let editingBooking = null;
@@ -215,11 +217,15 @@ async function render() {
   $("#date-picker").value = toDateInput(currentDate);
   $("#view-day").classList.toggle("active", viewMode === "day");
   $("#view-week").classList.toggle("active", viewMode === "week");
+  $("#view-month").classList.toggle("active", viewMode === "month");
   $("#hint").textContent =
-    viewMode === "week"
+    viewMode === "day"
+      ? "Click a free desk to book it for the day. Click a booking to change or cancel it."
+      : viewMode === "week"
       ? "Click a free space to book that desk for the day. Click a booking to change or cancel it."
-      : "Click a free desk to book it for the day. Click a booking to change or cancel it.";
+      : "Click a day to open it and book a desk.";
   if (viewMode === "week") return renderWeek();
+  if (viewMode === "month") return renderMonth();
   return renderDay();
 }
 
@@ -273,6 +279,98 @@ async function renderDay() {
       status.appendChild(free);
     }
     row.appendChild(status);
+    grid.appendChild(row);
+  }
+}
+
+async function renderMonth() {
+  $("#grid-wrap").classList.remove("hidden");
+  $("#closed-msg").classList.add("hidden");
+
+  const y = currentDate.getFullYear();
+  const m = currentDate.getMonth();
+  const first = new Date(y, m, 1);
+  const last = new Date(y, m + 1, 0);
+  $("#day-heading").textContent =
+    first.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+
+  const start = new Date(first);
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7));
+  const weekStarts = [];
+  for (let c = new Date(start); c <= last; c.setDate(c.getDate() + 7)) {
+    weekStarts.push(new Date(c));
+  }
+  const rangeEnd = new Date(start);
+  rangeEnd.setDate(rangeEnd.getDate() + weekStarts.length * 7);
+
+  let bookings = [];
+  try {
+    bookings = await store.list(toDateInput(start), toDateInput(rangeEnd));
+  } catch (err) {
+    showBanner(`Could not load bookings: ${err.message}`);
+  }
+  const byDate = {};
+  for (const b of bookings) (byDate[b.date] = byDate[b.date] || []).push(b);
+
+  const today = todayStr();
+  const grid = $("#grid");
+  grid.innerHTML = "";
+
+  const header = document.createElement("div");
+  header.className = "month-row";
+  for (const wd of ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]) {
+    const h = document.createElement("div");
+    h.className = "month-weekday";
+    h.textContent = wd;
+    header.appendChild(h);
+  }
+  grid.appendChild(header);
+
+  for (const wkStart of weekStarts) {
+    const row = document.createElement("div");
+    row.className = "month-row";
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(wkStart);
+      d.setDate(d.getDate() + i);
+      const dStr = toDateInput(d);
+      const inMonth = d.getMonth() === m;
+      const cell = document.createElement(inMonth ? "button" : "div");
+      cell.className =
+        "month-cell" + (inMonth ? "" : " other-month") + (dStr === today ? " today" : "");
+
+      const num = document.createElement("div");
+      num.className = "month-date";
+      num.textContent = d.getDate();
+      cell.appendChild(num);
+
+      const dayB = byDate[dStr] || [];
+      if (inMonth && dayB.length) {
+        const dots = document.createElement("div");
+        dots.className = "month-dots";
+        for (const desk of DESKS) {
+          if (!dayB.some((b) => b.desk === desk)) continue;
+          const dot = document.createElement("span");
+          dot.className = "month-dot";
+          dot.style.background = deskColours(desk)[0];
+          dot.title = desk;
+          dots.appendChild(dot);
+        }
+        cell.appendChild(dots);
+        const free = DESKS.length - dayB.length;
+        const cnt = document.createElement("div");
+        cnt.className = "month-count";
+        cnt.textContent = free === 0 ? "Full" : `${free} free`;
+        cell.appendChild(cnt);
+      }
+      if (inMonth) {
+        cell.type = "button";
+        cell.addEventListener("click", () => {
+          currentDate = d;
+          setViewMode("day");
+        });
+      }
+      row.appendChild(cell);
+    }
     grid.appendChild(row);
   }
 }
@@ -703,6 +801,7 @@ async function init() {
   $("#next-day").addEventListener("click", () => shiftDate(1));
   $("#view-day").addEventListener("click", () => setViewMode("day"));
   $("#view-week").addEventListener("click", () => setViewMode("week"));
+  $("#view-month").addEventListener("click", () => setViewMode("month"));
   $("#today-btn").addEventListener("click", () => {
     currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
@@ -742,7 +841,12 @@ async function init() {
 }
 
 function shiftDate(delta) {
-  currentDate.setDate(currentDate.getDate() + delta * (viewMode === "week" ? 7 : 1));
+  if (viewMode === "month") {
+    currentDate.setDate(1);
+    currentDate.setMonth(currentDate.getMonth() + delta);
+  } else {
+    currentDate.setDate(currentDate.getDate() + delta * (viewMode === "week" ? 7 : 1));
+  }
   render();
 }
 function setViewMode(mode) {

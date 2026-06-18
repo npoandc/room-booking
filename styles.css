@@ -74,8 +74,10 @@ body {
 .date-controls { display: flex; align-items: center; gap: 0.4rem; z-index: 1; flex-wrap: wrap; }
 
 .view-toggle { display: flex; margin-right: 0.5rem; }
-.view-toggle .ghost-btn { border-radius: 999px 0 0 999px; }
-.view-toggle .ghost-btn + .ghost-btn { border-radius: 0 999px 999px 0; border-left: none; }
+.view-toggle .ghost-btn { border-radius: 0; }
+.view-toggle .ghost-btn:first-child { border-radius: 999px 0 0 999px; }
+.view-toggle .ghost-btn:last-child { border-radius: 0 999px 999px 0; }
+.view-toggle .ghost-btn + .ghost-btn { border-left: none; }
 .date-controls .view-toggle .ghost-btn.active {
   background: var(--oc-grey);
   color: var(--oc-purple);
@@ -347,6 +349,50 @@ input:focus, select:focus, textarea:focus {
 .desk-chip:hover { filter: brightness(0.9); }
 .desk-chip .who { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .desk-chip .note { display: block; opacity: 0.85; font-size: 0.76rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- month view ---- */
+#grid:has(.month-row) { min-width: 0; }
+.month-row { display: grid; grid-template-columns: repeat(5, 1fr); }
+.month-weekday {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  border-left: 1px solid var(--line);
+}
+.month-weekday:first-child { border-left: none; }
+.month-cell {
+  text-align: left;
+  background: none;
+  border: none;
+  border-left: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  min-height: 94px;
+  padding: 0.45rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+.month-cell:first-child { border-left: none; }
+button.month-cell:hover { background: var(--oc-pink-soft); }
+.month-cell.other-month { background: #fafafa; color: #c2c6ca; cursor: default; }
+.month-date {
+  font-size: 0.85rem;
+  font-weight: 600;
+  width: 1.55rem;
+  height: 1.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.month-cell.today .month-date { background: var(--oc-yellow); color: var(--oc-granite); border-radius: 50%; }
+.month-dots { display: flex; flex-wrap: wrap; gap: 3px; }
+.month-dot { width: 9px; height: 9px; border-radius: 50%; }
+.month-count { font-size: 0.72rem; color: var(--muted); margin-top: auto; }
 
 .closed-msg { color: var(--muted); padding: 2rem 0; text-align: center; }
 .hint { color: var(--muted); font-size: 0.82rem; margin-top: 0.75rem; }
