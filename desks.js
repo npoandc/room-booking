@@ -503,6 +503,8 @@ function openCreateModal(desk, dateStr) {
   $("#booking-modal-title").textContent = "Book a desk";
   $("#booking-submit").textContent = "Book desk";
   $("#edit-only").classList.add("hidden");
+  $("#f-invite").value = "";
+  $("#f-invite-field").classList.remove("hidden");
   $("#f-desk").value = desk;
   $("#f-date").value = dateStr;
   $("#f-name").value = localStorage.getItem("my-name") || "";
@@ -519,6 +521,7 @@ function openEditModal(booking) {
   $("#booking-modal-title").textContent = "Change desk booking";
   $("#booking-submit").textContent = "Save changes";
   $("#edit-only").classList.remove("hidden");
+  $("#f-invite-field").classList.add("hidden");
   $("#f-desk").value = booking.desk;
   $("#f-date").value = booking.date;
   $("#f-name").value = booking.bookedBy;
@@ -574,6 +577,7 @@ async function submitBookingForm(event) {
   if (!name) return formError("Please enter your name.");
 
   const payload = { desk, bookedBy: name, note, date: dateStr };
+  const inviteEmails = editingBooking ? [] : parseEmails($("#f-invite").value);
   const submitBtn = $("#booking-submit");
   submitBtn.disabled = true;
   try {
@@ -591,6 +595,10 @@ async function submitBookingForm(event) {
     $("#booking-modal").close();
     currentDate = parseDate(dateStr);
     await render();
+    if (inviteEmails.length) {
+      showNotice(`Opening an email invite for ${inviteEmails.length} ${inviteEmails.length > 1 ? "people" : "person"} — check your email program, then press Send.`);
+      window.location.href = inviteMailto(payload, inviteEmails);
+    }
   } catch (err) {
     formError(err.message);
   } finally {
@@ -650,6 +658,7 @@ async function openManageModal(booking) {
   $("#cancel-form").classList.add("hidden");
   $("#cancel-error").classList.add("hidden");
   $("#cal-menu").classList.add("hidden");
+  $("#invite-emails").value = "";
   $("#c-name").value = localStorage.getItem("my-name") || "";
   $("#c-reason").value = "";
   $("#manage-modal").showModal();
@@ -786,6 +795,31 @@ function googleUrl(b) {
   return `https://calendar.google.com/calendar/render?${q}`;
 }
 
+function parseEmails(str) {
+  return (str || "").split(/[,;\s]+/).map((s) => s.trim()).filter((s) => s.includes("@"));
+}
+
+// Opens the assistant's own email client with a ready-to-send invite.
+function inviteMailto(b, emails) {
+  const subject = `Desk booked for you: ${b.desk} — ${fmtDayLong(parseDate(b.date))}`;
+  const body = [
+    "Hi,",
+    "",
+    "A desk has been booked for you at the Hoole office:",
+    "",
+    `Desk: ${b.desk}`,
+    `Day: ${fmtDayLong(parseDate(b.date))}`,
+    b.note ? `Note: ${b.note}` : "",
+    "",
+    `Add it to your calendar (Outlook): ${outlookUrl(b)}`,
+    `Add it to your calendar (Google): ${googleUrl(b)}`,
+    "",
+    "Any change or cancellation is made in the desk booking app:",
+    APP_URL,
+  ].filter((l) => l !== null).join("\n");
+  return `mailto:${emails.join(",")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 // ── Wiring ──────────────────────────────────────────────────────────
 
 async function init() {
@@ -832,6 +866,11 @@ async function init() {
   $("#cal-outlook").addEventListener("click", () => window.open(outlookUrl(managedBooking), "_blank", "noopener"));
   $("#cal-google").addEventListener("click", () => window.open(googleUrl(managedBooking), "_blank", "noopener"));
   $("#cal-file").addEventListener("click", () => downloadIcs(managedBooking));
+  $("#invite-send").addEventListener("click", () => {
+    const emails = parseEmails($("#invite-emails").value);
+    if (!emails.length) { $("#invite-emails").focus(); return; }
+    window.location.href = inviteMailto(managedBooking, emails);
+  });
 
   $("#m-change-btn").addEventListener("click", () => {
     $("#manage-modal").close();

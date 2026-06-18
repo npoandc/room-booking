@@ -91,6 +91,10 @@
         <input type="text" id="f-name" placeholder="e.g. Jane Smith" maxlength="80" required>
       </label>
 
+      <label id="f-invite-field">Invite people by email <span class="optional">(optional — for booking on someone's behalf)</span>
+        <input type="text" id="f-invite" placeholder="e.g. jane@oliverandco.co.uk, tom@oliverandco.co.uk" maxlength="400">
+      </label>
+
       <div id="edit-only" class="edit-only hidden">
         <label>Who is making this change?
           <input type="text" id="f-changed-by" placeholder="Your name" maxlength="80">
@@ -131,6 +135,13 @@
           <button type="button" class="ghost-btn" id="cal-outlook">Outlook (work)</button>
           <button type="button" class="ghost-btn" id="cal-google">Google Calendar</button>
           <button type="button" class="ghost-btn" id="cal-file">Apple / file (.ics)</button>
+        </div>
+        <div class="invite-row">
+          <label class="cal-menu-label" for="invite-emails">Or email an invite to other people:</label>
+          <div class="invite-controls">
+            <input type="text" id="invite-emails" placeholder="Email addresses, comma separated" maxlength="400">
+            <button type="button" class="ghost-btn" id="invite-send">Email invite</button>
+          </div>
         </div>
       </div>
 

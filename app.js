@@ -668,6 +668,8 @@ function openCreateModal(room, startMin) {
   $("#f-end").value = Math.min(startMin + 60, CLOSE_MIN);
   $("#f-title").value = "";
   $("#f-name").value = localStorage.getItem("my-name") || "";
+  $("#f-invite").value = "";
+  $("#f-invite-field").classList.remove("hidden");
   $("#f-changed-by").value = "";
   $("#f-reason").value = "";
   clearFormMessages();
@@ -683,6 +685,7 @@ function openEditModal(booking) {
   $("#booking-submit").textContent = "Save changes";
   $("#edit-only").classList.remove("hidden");
   $("#repeat-row").classList.add("hidden");
+  $("#f-invite-field").classList.add("hidden");
   $("#f-room").value = booking.room;
   $("#f-date").value = toDateInput(booking.start);
   $("#f-start").value = minsOf(booking.start);
@@ -776,6 +779,8 @@ async function submitBookingForm(event) {
   if (!editingBooking && repeatDays && !untilStr)
     return formError("Please choose the last date for the repeat.");
 
+  const inviteEmails = editingBooking ? [] : parseEmails($("#f-invite").value);
+
   const submitBtn = $("#booking-submit");
   submitBtn.disabled = true;
   try {
@@ -804,6 +809,10 @@ async function submitBookingForm(event) {
     $("#booking-modal").close();
     currentDate = dateAt(f.dateStr, 0);
     await render();
+    if (inviteEmails.length) {
+      showNotice(`Opening an email invite for ${inviteEmails.length} ${inviteEmails.length > 1 ? "people" : "person"} — check your email program, then press Send.`);
+      window.location.href = inviteMailto(payload, inviteEmails);
+    }
   } catch (err) {
     formError(err.message);
   } finally {
@@ -866,6 +875,7 @@ async function openManageModal(booking) {
   $("#cancel-form").classList.add("hidden");
   $("#cancel-error").classList.add("hidden");
   $("#cal-menu").classList.add("hidden");
+  $("#invite-emails").value = "";
   $("#c-name").value = localStorage.getItem("my-name") || "";
   $("#c-reason").value = "";
   $("#manage-modal").showModal();
@@ -1031,6 +1041,35 @@ function outlookUrl(b) {
   return `https://outlook.office.com/calendar/0/deeplink/compose?${q}`;
 }
 
+function parseEmails(str) {
+  return (str || "")
+    .split(/[,;\s]+/)
+    .map((s) => s.trim())
+    .filter((s) => s.includes("@"));
+}
+
+// Opens the assistant's own email client with a ready-to-send invite to
+// the named people, including a one-click "add to your calendar" link.
+function inviteMailto(b, emails) {
+  const subject = `Room booked for you: ${b.room} — ${fmtDayLong(b.start)}`;
+  const body = [
+    "Hi,",
+    "",
+    "A meeting room has been booked for you:",
+    "",
+    `Room: ${b.room}`,
+    `When: ${fmtDayLong(b.start)}, ${fmtTime(b.start)}–${fmtTime(b.end)}`,
+    `Purpose: ${b.title}`,
+    "",
+    `Add it to your calendar (Outlook): ${outlookUrl(b)}`,
+    `Add it to your calendar (Google): ${googleUrl(b)}`,
+    "",
+    "Any change or cancellation is made in the room booking app:",
+    APP_URL,
+  ].join("\n");
+  return `mailto:${emails.join(",")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 function googleUrl(b) {
   const t = calendarEventText(b);
   const q = new URLSearchParams({
@@ -1112,6 +1151,14 @@ async function init() {
   $("#cal-google").addEventListener("click", () =>
     window.open(googleUrl(managedBooking), "_blank", "noopener"));
   $("#cal-file").addEventListener("click", () => downloadIcs(managedBooking));
+  $("#invite-send").addEventListener("click", () => {
+    const emails = parseEmails($("#invite-emails").value);
+    if (!emails.length) {
+      $("#invite-emails").focus();
+      return;
+    }
+    window.location.href = inviteMailto(managedBooking, emails);
+  });
 
   $("#m-change-btn").addEventListener("click", () => {
     $("#manage-modal").close();
