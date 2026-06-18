@@ -739,6 +739,13 @@ function nextDayYmd(dateStr) {
 function eventTitle(b) {
   return `Desk booked: ${b.desk} (Hoole)`;
 }
+const APP_URL = "https://npoandc.github.io/room-booking/desks.html";
+function eventDescription(b) {
+  return (
+    `Desk booked by ${b.bookedBy}${b.note ? " — " + b.note : ""} via the Oliver & Co desk booking app.\n\n` +
+    `Please don't edit this calendar entry directly — any change or cancellation must be made in the desk booking app, otherwise the desk stays booked:\n${APP_URL}`
+  );
+}
 function downloadIcs(b) {
   const lines = [
     "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Oliver & Co//Desk Bookings//EN",
@@ -748,7 +755,8 @@ function downloadIcs(b) {
     `DTEND;VALUE=DATE:${nextDayYmd(b.date)}`,
     `SUMMARY:${icsEscape(eventTitle(b))}`,
     `LOCATION:Hoole office, Oliver & Co`,
-    `DESCRIPTION:${icsEscape(`Desk booked by ${b.bookedBy}${b.note ? " — " + b.note : ""}.`)}`,
+    `URL:${APP_URL}`,
+    `DESCRIPTION:${icsEscape(eventDescription(b))}`,
     "END:VEVENT", "END:VCALENDAR",
   ];
   const blob = new Blob([lines.join("\r\n") + "\r\n"], { type: "text/calendar" });
@@ -764,7 +772,7 @@ function outlookUrl(b) {
   const q = new URLSearchParams({
     path: "/calendar/action/compose", rru: "addevent",
     subject: eventTitle(b), location: "Hoole office, Oliver & Co",
-    body: `Desk booked by ${b.bookedBy}${b.note ? " — " + b.note : ""}.`,
+    body: eventDescription(b),
     startdt: `${b.date}T00:00:00`, enddt: `${b.date}T23:59:00`, allday: "true",
   });
   return `https://outlook.office.com/calendar/0/deeplink/compose?${q}`;
@@ -772,7 +780,7 @@ function outlookUrl(b) {
 function googleUrl(b) {
   const q = new URLSearchParams({
     action: "TEMPLATE", text: eventTitle(b), location: "Hoole office, Oliver & Co",
-    details: `Desk booked by ${b.bookedBy}${b.note ? " — " + b.note : ""}.`,
+    details: eventDescription(b),
     dates: `${ymd(b.date)}/${nextDayYmd(b.date)}`,
   });
   return `https://calendar.google.com/calendar/render?${q}`;

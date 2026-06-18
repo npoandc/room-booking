@@ -969,6 +969,15 @@ function icsStamp(d) {
   return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 }
 
+const APP_URL = "https://npoandc.github.io/room-booking/";
+
+function eventDescription(b) {
+  return (
+    `Booked by ${b.bookedBy} via the Oliver & Co room booking app.\n\n` +
+    `Please don't edit this calendar entry directly — any change or cancellation must be made in the room booking app, otherwise the room stays booked:\n${APP_URL}`
+  );
+}
+
 function downloadIcs(b) {
   const lines = [
     "BEGIN:VCALENDAR",
@@ -981,7 +990,8 @@ function downloadIcs(b) {
     `DTEND:${icsStamp(b.end)}`,
     `SUMMARY:${icsEscape(`${b.room}: ${b.title}`)}`,
     `LOCATION:${icsEscape(`${b.room}, Oliver & Co`)}`,
-    `DESCRIPTION:${icsEscape(`Booked by ${b.bookedBy} via the room booking app.`)}`,
+    `URL:${APP_URL}`,
+    `DESCRIPTION:${icsEscape(eventDescription(b))}`,
     "END:VEVENT",
     "END:VCALENDAR",
   ];
@@ -1003,7 +1013,7 @@ function calendarEventText(b) {
   return {
     title: `${b.room}: ${b.title}`,
     location: `${b.room}, Oliver & Co`,
-    details: `Booked by ${b.bookedBy} via the room booking app.`,
+    details: eventDescription(b),
   };
 }
 
