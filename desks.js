@@ -26,6 +26,12 @@ function deskColours(desk) {
   return DESK_COLOURS[desk] || ["#ab1365", "#ffffff"];
 }
 
+const DEPARTMENTS = [
+  "IT", "People", "Client Services", "Admin", "ID", "PI", "Clin Neg",
+  "Conveyancing", "Commercial Property", "Corporate & Commercial", "Family",
+  "Accounts", "Wills & Probate", "Litigation & Disputes", "Ops", "Marketing",
+];
+
 // ── Storage layer ───────────────────────────────────────────────────
 
 function normalize(row) {
@@ -34,6 +40,7 @@ function normalize(row) {
     desk: row.desk,
     bookedBy: row.booked_by,
     note: row.note || "",
+    department: row.department || "",
     date: row.booking_date, // 'YYYY-MM-DD'
     createdAt: row.created_at ? new Date(row.created_at) : null,
   };
@@ -66,13 +73,14 @@ async function supabaseStore() {
     },
     create(b) {
       return rpc("create_desk_booking", {
-        p_desk: b.desk, p_booked_by: b.bookedBy, p_note: b.note, p_date: b.date,
+        p_desk: b.desk, p_booked_by: b.bookedBy, p_note: b.note,
+        p_date: b.date, p_department: b.department,
       });
     },
     change(id, b, changedBy, reason) {
       return rpc("change_desk_booking", {
         p_id: id, p_changed_by: changedBy, p_reason: reason,
-        p_desk: b.desk, p_date: b.date, p_note: b.note,
+        p_desk: b.desk, p_date: b.date, p_note: b.note, p_department: b.department,
       });
     },
     cancel(id, changedBy, reason) {
@@ -106,6 +114,15 @@ async function supabaseStore() {
         .sort((a, b) => new Date(b.changed_at) - new Date(a.changed_at))
         .slice(0, 200);
     },
+    async statsBookings() {
+      const { data, error } = await client
+        .from("desk_bookings")
+        .select("department, booking_date")
+        .eq("status", "active")
+        .limit(5000);
+      if (error) throw new Error(error.message);
+      return data;
+    },
   };
 }
 
@@ -134,7 +151,8 @@ function demoStore() {
         throw new Error(`${b.desk} is already booked on that day. Please pick another desk or day.`);
       db.bookings.push({
         id: crypto.randomUUID(), desk: b.desk, booked_by: b.bookedBy,
-        note: b.note || null, booking_date: b.date, status: "active",
+        note: b.note || null, department: b.department || null,
+        booking_date: b.date, status: "active",
         created_at: new Date().toISOString(),
       });
       save(db);
@@ -150,7 +168,10 @@ function demoStore() {
         old_desk: row.desk, old_date: row.booking_date,
         new_desk: b.desk, new_date: b.date, changed_at: new Date().toISOString(),
       });
-      Object.assign(row, { desk: b.desk, booking_date: b.date, note: b.note || row.note });
+      Object.assign(row, {
+        desk: b.desk, booking_date: b.date,
+        note: b.note || row.note, department: b.department || row.department,
+      });
       save(db);
     },
     async cancel(id, changedBy, reason) {
@@ -178,6 +199,11 @@ function demoStore() {
       return [...db.changes, ...creates]
         .sort((a, b) => new Date(b.changed_at) - new Date(a.changed_at))
         .slice(0, 200);
+    },
+    async statsBookings() {
+      return load()
+        .bookings.filter((b) => b.status === "active")
+        .map((b) => ({ department: b.department, booking_date: b.booking_date }));
     },
   };
 }
@@ -210,6 +236,7 @@ let currentDate = new Date();
 currentDate.setHours(0, 0, 0, 0);
 let editingBooking = null;
 let managedBooking = null;
+let statsScope = localStorage.getItem("desk-stats-scope") === "all" ? "all" : "month";
 
 // ── Rendering ───────────────────────────────────────────────────────
 
@@ -481,6 +508,59 @@ function bookingChip(booking, withNote) {
   return chip;
 }
 
+async function renderStats() {
+  $("#stats-month").classList.toggle("active", statsScope === "month");
+  $("#stats-all").classList.toggle("active", statsScope === "all");
+
+  let rows = [];
+  try {
+    rows = await store.statsBookings();
+  } catch {
+    rows = [];
+  }
+  const ym = todayStr().slice(0, 7);
+  const inScope =
+    statsScope === "month" ? rows.filter((r) => (r.booking_date || "").slice(0, 7) === ym) : rows;
+
+  const counts = {};
+  for (const r of inScope) {
+    const dept = r.department || "Not specified";
+    counts[dept] = (counts[dept] || 0) + 1;
+  }
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  const list = $("#dept-stats-list");
+  list.innerHTML = "";
+  if (!entries.length) {
+    const p = document.createElement("p");
+    p.className = "dept-stats-empty";
+    p.textContent = `No desk bookings ${statsScope === "month" ? "this month" : "yet"}.`;
+    list.appendChild(p);
+    return;
+  }
+  const max = entries[0][1];
+  entries.forEach(([dept, n], i) => {
+    const row = document.createElement("div");
+    row.className = "dept-bar-row" + (i === 0 ? " top" : "");
+    const name = document.createElement("div");
+    name.className = "dept-bar-name";
+    name.textContent = dept;
+    const track = document.createElement("div");
+    track.className = "dept-bar-track";
+    const fill = document.createElement("div");
+    fill.className = "dept-bar-fill";
+    fill.style.width = `${Math.round((n / max) * 100)}%`;
+    track.appendChild(fill);
+    const cnt = document.createElement("div");
+    cnt.className = "dept-bar-count";
+    cnt.textContent = n;
+    row.appendChild(name);
+    row.appendChild(track);
+    row.appendChild(cnt);
+    list.appendChild(row);
+  });
+}
+
 function showBanner(text) {
   const el = $("#banner");
   el.textContent = text;
@@ -498,6 +578,12 @@ function fillDeskSelect() {
   for (const d of DESKS) sel.add(new Option(d, d));
 }
 
+function fillDeptSelect() {
+  const sel = $("#f-dept");
+  sel.add(new Option("Choose a department…", ""));
+  for (const d of DEPARTMENTS) sel.add(new Option(d, d));
+}
+
 function openCreateModal(desk, dateStr) {
   editingBooking = null;
   $("#booking-modal-title").textContent = "Book a desk";
@@ -508,6 +594,7 @@ function openCreateModal(desk, dateStr) {
   $("#f-desk").value = desk;
   $("#f-date").value = dateStr;
   $("#f-name").value = localStorage.getItem("my-name") || "";
+  $("#f-dept").value = localStorage.getItem("my-dept") || "";
   $("#f-note").value = "";
   $("#f-changed-by").value = "";
   $("#f-reason").value = "";
@@ -525,6 +612,7 @@ function openEditModal(booking) {
   $("#f-desk").value = booking.desk;
   $("#f-date").value = booking.date;
   $("#f-name").value = booking.bookedBy;
+  $("#f-dept").value = booking.department || "";
   $("#f-note").value = booking.note;
   $("#f-changed-by").value = localStorage.getItem("my-name") || "";
   $("#f-reason").value = "";
@@ -570,13 +658,15 @@ async function submitBookingForm(event) {
   const dateStr = $("#f-date").value;
   const name = $("#f-name").value.trim();
   const note = $("#f-note").value.trim();
+  const department = $("#f-dept").value;
 
   if (!dateStr) return formError("Please pick a date.");
   if (isWeekend(parseDate(dateStr)))
     return formError("Desks can only be booked Monday to Friday.");
   if (!name) return formError("Please enter your name.");
+  if (!department) return formError("Please choose a department.");
 
-  const payload = { desk, bookedBy: name, note, date: dateStr };
+  const payload = { desk, bookedBy: name, note, date: dateStr, department };
   const { good: inviteEmails, bad: inviteBad } = editingBooking
     ? { good: [], bad: [] }
     : splitEmails($("#f-invite").value);
@@ -598,9 +688,11 @@ async function submitBookingForm(event) {
       await store.create(payload);
       localStorage.setItem("my-name", name);
     }
+    localStorage.setItem("my-dept", department);
     $("#booking-modal").close();
     currentDate = parseDate(dateStr);
     await render();
+    renderStats();
     if (inviteEmails.length) {
       showNotice(`Opening an email invite for ${inviteEmails.length} ${inviteEmails.length > 1 ? "people" : "person"} — check your email program, then press Send.`);
       window.location.href = inviteMailto(payload, inviteEmails);
@@ -624,6 +716,7 @@ async function openManageModal(booking) {
     ["Day", fmtDayLong(parseDate(booking.date))],
     ["Booked by", booking.bookedBy],
   ];
+  if (booking.department) lines.push(["Department", booking.department]);
   if (booking.note) lines.push(["Note", booking.note]);
   if (booking.createdAt) {
     lines.push(["Added", booking.createdAt.toLocaleString("en-GB", {
@@ -687,6 +780,7 @@ async function submitCancelForm(event) {
     localStorage.setItem("my-name", name);
     $("#manage-modal").close();
     await render();
+    renderStats();
   } catch (err) {
     errEl.textContent = err.message;
     errEl.classList.remove("hidden");
@@ -854,6 +948,18 @@ async function init() {
   }
 
   fillDeskSelect();
+  fillDeptSelect();
+
+  $("#stats-month").addEventListener("click", () => {
+    statsScope = "month";
+    localStorage.setItem("desk-stats-scope", "month");
+    renderStats();
+  });
+  $("#stats-all").addEventListener("click", () => {
+    statsScope = "all";
+    localStorage.setItem("desk-stats-scope", "all");
+    renderStats();
+  });
 
   $("#prev-day").addEventListener("click", () => shiftDate(-1));
   $("#next-day").addEventListener("click", () => shiftDate(1));
@@ -906,6 +1012,7 @@ async function init() {
   }
 
   await render();
+  renderStats();
 }
 
 function shiftDate(delta) {

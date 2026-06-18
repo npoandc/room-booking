@@ -397,6 +397,40 @@ button.month-cell:hover { background: var(--oc-pink-soft); }
 .closed-msg { color: var(--muted); padding: 2rem 0; text-align: center; }
 .hint { color: var(--muted); font-size: 0.82rem; margin-top: 0.75rem; }
 
+/* ---- department stats (desk page) ---- */
+.dept-stats {
+  margin-top: 1.75rem;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+.dept-stats-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+.dept-stats-head h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  color: var(--oc-purple);
+}
+.dept-stats-list { display: flex; flex-direction: column; gap: 0.45rem; }
+.dept-bar-row { display: grid; grid-template-columns: 160px 1fr 2.5rem; align-items: center; gap: 0.6rem; font-size: 0.85rem; }
+.dept-bar-name { color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dept-bar-track { background: var(--oc-grey); border-radius: 6px; height: 16px; overflow: hidden; }
+.dept-bar-fill { background: var(--oc-pink); height: 100%; border-radius: 6px; min-width: 2px; }
+.dept-bar-count { text-align: right; font-weight: 600; color: var(--oc-purple); }
+.dept-stats-empty { color: var(--muted); font-size: 0.85rem; }
+.dept-bar-row.top .dept-bar-fill { background: var(--oc-pink); }
+@media (max-width: 560px) {
+  .dept-bar-row { grid-template-columns: 110px 1fr 2rem; }
+}
+
 /* ---- dialogs ---- */
 dialog {
   border: none;

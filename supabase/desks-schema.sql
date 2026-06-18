@@ -10,6 +10,7 @@ create table if not exists public.desk_bookings (
   desk         text not null,
   booked_by    text not null,
   note         text,
+  department   text,
   booking_date date not null,
   status       text not null default 'active' check (status in ('active', 'cancelled')),
   created_at   timestamptz not null default now()
@@ -62,15 +63,22 @@ end $$;
 -- ── Public API (the only way the website can write) ─────────────────
 
 create or replace function public.create_desk_booking(
-  p_desk text, p_booked_by text, p_note text, p_date date
+  p_desk text, p_booked_by text, p_note text, p_date date, p_department text default null
 ) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare v_id uuid;
 begin
   perform validate_desk_booking(p_desk, p_booked_by, p_date);
+  if p_department is null or p_department not in (
+    'IT','People','Client Services','Admin','ID','PI','Clin Neg','Conveyancing',
+    'Commercial Property','Corporate & Commercial','Family','Accounts',
+    'Wills & Probate','Litigation & Disputes','Ops','Marketing'
+  ) then
+    raise exception 'Please choose a department.';
+  end if;
   begin
-    insert into desk_bookings (desk, booked_by, note, booking_date)
-    values (p_desk, trim(p_booked_by), nullif(trim(p_note), ''), p_date)
+    insert into desk_bookings (desk, booked_by, note, booking_date, department)
+    values (p_desk, trim(p_booked_by), nullif(trim(p_note), ''), p_date, p_department)
     returning id into v_id;
   exception when unique_violation then
     raise exception 'DESK_TAKEN: % is already booked on that day. Please pick another desk or day.', p_desk;
@@ -80,7 +88,7 @@ end $$;
 
 create or replace function public.change_desk_booking(
   p_id uuid, p_changed_by text, p_reason text,
-  p_desk text, p_date date, p_note text default null
+  p_desk text, p_date date, p_note text default null, p_department text default null
 ) returns void
 language plpgsql security definer set search_path = public as $$
 declare v_old desk_bookings%rowtype;
@@ -98,12 +106,20 @@ begin
   end if;
 
   perform validate_desk_booking(p_desk, v_old.booked_by, p_date);
+  if p_department is not null and p_department not in (
+    'IT','People','Client Services','Admin','ID','PI','Clin Neg','Conveyancing',
+    'Commercial Property','Corporate & Commercial','Family','Accounts',
+    'Wills & Probate','Litigation & Disputes','Ops','Marketing'
+  ) then
+    raise exception 'Please choose a valid department.';
+  end if;
 
   begin
     update desk_bookings
        set desk = p_desk,
            booking_date = p_date,
-           note = coalesce(nullif(trim(p_note), ''), note)
+           note = coalesce(nullif(trim(p_note), ''), note),
+           department = coalesce(p_department, department)
      where id = p_id;
   exception when unique_violation then
     raise exception 'DESK_TAKEN: % is already booked on that day. Please pick another desk or day.', p_desk;
@@ -152,7 +168,7 @@ create policy "anyone can read desk bookings"
 create policy "anyone can read the desk change log"
   on public.desk_booking_changes for select using (true);
 
-grant execute on function public.create_desk_booking(text, text, text, date) to anon;
-grant execute on function public.change_desk_booking(uuid, text, text, text, date, text) to anon;
+grant execute on function public.create_desk_booking(text, text, text, date, text) to anon;
+grant execute on function public.change_desk_booking(uuid, text, text, text, date, text, text) to anon;
 grant execute on function public.cancel_desk_booking(uuid, text, text) to anon;
 revoke execute on function public.validate_desk_booking(text, text, date) from anon;

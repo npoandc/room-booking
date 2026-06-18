@@ -44,6 +44,17 @@
     </div>
     <p id="closed-msg" class="closed-msg hidden">Desks are bookable Monday to Friday. Pick a weekday to make a booking.</p>
     <p class="hint" id="hint">Click a free desk to book it for the day. Click a booking to change or cancel it.</p>
+
+    <section id="dept-stats" class="dept-stats">
+      <div class="dept-stats-head">
+        <h2>Department bookings</h2>
+        <div class="view-toggle">
+          <button type="button" id="stats-month" class="ghost-btn">This month</button>
+          <button type="button" id="stats-all" class="ghost-btn">All time</button>
+        </div>
+      </div>
+      <div id="dept-stats-list" class="dept-stats-list"></div>
+    </section>
   </main>
 
   <!-- Create / edit booking -->
@@ -62,6 +73,10 @@
 
       <label>Your name
         <input type="text" id="f-name" placeholder="e.g. Jane Smith" maxlength="80" required>
+      </label>
+
+      <label>Department
+        <select id="f-dept" required></select>
       </label>
 
       <label>Note <span class="optional">(optional)</span>
