@@ -12,6 +12,20 @@ const DESKS = [
   "Desk 6",
 ];
 
+// Each desk gets its own Oliver & Co brand colour: [background, text]
+const DESK_COLOURS = {
+  "Reception": ["#ab1365", "#ffffff"], // pink
+  "Desk 1": ["#2e4057", "#ffffff"],    // blue
+  "Desk 2": ["#2e5556", "#ffffff"],    // green
+  "Desk 3": ["#311b3a", "#ffffff"],    // purple
+  "Desk 4": ["#dbb75a", "#222628"],    // yellow (granite text)
+  "Desk 5": ["#222628", "#ffffff"],    // granite
+  "Desk 6": ["#8c0f53", "#ffffff"],    // deep pink
+};
+function deskColours(desk) {
+  return DESK_COLOURS[desk] || ["#ab1365", "#ffffff"];
+}
+
 // ── Storage layer ───────────────────────────────────────────────────
 
 function normalize(row) {
@@ -336,10 +350,10 @@ async function renderWeek() {
 function deskLabelEl(desk) {
   const label = document.createElement("div");
   label.className = "room-label";
-  const icon = document.createElement("span");
-  icon.className = "desk-icon";
-  icon.textContent = desk === "Reception" ? "★" : "▦";
-  label.appendChild(icon);
+  const dot = document.createElement("span");
+  dot.className = "room-dot";
+  dot.style.background = deskColours(desk)[0];
+  label.appendChild(dot);
   label.appendChild(document.createTextNode(desk));
   return label;
 }
@@ -348,6 +362,9 @@ function bookingChip(booking, withNote) {
   const chip = document.createElement("button");
   chip.type = "button";
   chip.className = "desk-chip";
+  const [bg, fg] = deskColours(booking.desk);
+  chip.style.background = bg;
+  chip.style.color = fg;
   const who = document.createElement("span");
   who.className = "who";
   who.textContent = booking.bookedBy;
