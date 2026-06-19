@@ -346,11 +346,14 @@ async function render() {
   $("#view-month").classList.toggle("active", viewMode === "month");
   $("#hint").textContent =
     viewMode === "day"
-      ? "Click an empty slot to book it. Click a booking to change or cancel it."
+      ? isMobile()
+        ? "Tap “Book this room” to make a booking. Tap a booking to change or cancel it."
+        : "Click an empty slot to book it. Click a booking to change or cancel it."
       : "Click a booking to change or cancel it. Click a day to open it for booking.";
 
   if (viewMode === "week") return renderWeek();
   if (viewMode === "month") return renderMonth();
+  if (isMobile()) return renderDayMobile();
 
   $("#day-heading").textContent = fmtDayLong(currentDate);
 
@@ -441,6 +444,93 @@ async function render() {
 
     row.appendChild(track);
     grid.appendChild(row);
+  }
+}
+
+const isMobile = () => window.matchMedia("(max-width: 640px)").matches;
+
+// Sensible default start time when booking from the phone layout.
+function defaultStartMin() {
+  const now = new Date();
+  if (toDateInput(now) === toDateInput(currentDate)) {
+    let m = Math.ceil((now.getHours() * 60 + now.getMinutes()) / SLOT_MIN) * SLOT_MIN;
+    if (m < OPEN_MIN || m >= CLOSE_MIN) m = OPEN_MIN;
+    return m;
+  }
+  return OPEN_MIN;
+}
+
+// Phone-friendly day view: each room as a card listing its bookings, with a
+// big "Book this room" button (the time is chosen in the form).
+async function renderDayMobile() {
+  $("#day-heading").textContent = fmtDayLong(currentDate);
+  const grid = $("#grid");
+  if (isWeekend(currentDate)) {
+    grid.innerHTML = "";
+    $("#grid-wrap").classList.add("hidden");
+    $("#closed-msg").classList.remove("hidden");
+    return;
+  }
+  $("#grid-wrap").classList.remove("hidden");
+  $("#closed-msg").classList.add("hidden");
+
+  const dayStart = new Date(currentDate);
+  const dayEnd = new Date(currentDate);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+  try {
+    dayBookings = await store.list(dayStart, dayEnd);
+  } catch (err) {
+    showBanner(`Could not load bookings: ${err.message}`);
+    dayBookings = [];
+  }
+
+  grid.innerHTML = "";
+  for (const room of ROOMS) {
+    const card = document.createElement("div");
+    card.className = "m-card";
+
+    const head = document.createElement("div");
+    head.className = "m-card-head";
+    const dot = document.createElement("span");
+    dot.className = "room-dot";
+    dot.style.background = roomColours(room)[0];
+    head.appendChild(dot);
+    head.appendChild(document.createTextNode(room));
+    card.appendChild(head);
+
+    const mine = dayBookings
+      .filter((b) => b.room === room)
+      .sort((a, b) => a.start - b.start);
+    if (mine.length) {
+      for (const b of mine) {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "m-chip";
+        const [bg, fg] = roomColours(room);
+        chip.style.background = bg;
+        chip.style.color = fg;
+        chip.innerHTML = `<span class="what"></span><span class="who"></span>`;
+        chip.querySelector(".what").textContent =
+          `${b.seriesId ? "↻ " : ""}${fmtTime(b.start)}–${fmtTime(b.end)} · ${b.title}`;
+        chip.querySelector(".who").textContent = b.bookedBy;
+        chip.addEventListener("click", () => openManageModal(b));
+        card.appendChild(chip);
+      }
+    } else {
+      const none = document.createElement("p");
+      none.className = "m-none";
+      none.textContent = "No bookings yet";
+      card.appendChild(none);
+    }
+
+    const book = document.createElement("button");
+    book.type = "button";
+    book.className = "m-book-btn";
+    book.textContent = "＋ Book this room";
+    book.addEventListener("click", () => openCreateModal(room, defaultStartMin()));
+    card.appendChild(book);
+
+    grid.appendChild(card);
   }
 }
 
@@ -1123,6 +1213,15 @@ async function init() {
   $("#view-day").addEventListener("click", () => setViewMode("day"));
   $("#view-week").addEventListener("click", () => setViewMode("week"));
   $("#view-month").addEventListener("click", () => setViewMode("month"));
+
+  // Re-render when crossing the mobile/desktop breakpoint (e.g. rotating a phone).
+  let wasMobile = isMobile();
+  window.addEventListener("resize", () => {
+    if (isMobile() !== wasMobile) {
+      wasMobile = isMobile();
+      render();
+    }
+  });
   $("#today-btn").addEventListener("click", () => {
     currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
