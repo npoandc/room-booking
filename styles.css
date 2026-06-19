@@ -299,7 +299,6 @@ input:focus, select:focus, textarea:focus {
 /* day view fits the screen; week view keeps enough width for 5 columns */
 #grid:has(.desk-row) { min-width: 0; }
 #grid:has(.desk-week-row) { min-width: 820px; }
-#grid:has(.m-card) { min-width: 0; }
 
 .desk-row {
   display: grid;
@@ -583,67 +582,8 @@ footer {
 
 .hidden { display: none !important; }
 
-/* ---- phone-friendly day view (cards) ---- */
-.m-card { border-top: 1px solid var(--line); padding: 0.85rem 0.9rem; }
-.m-card:first-child { border-top: none; }
-.m-card-head {
-  display: flex;
-  align-items: center;
-  font-weight: 600;
-  color: var(--oc-purple);
-  font-size: 0.98rem;
-  margin-bottom: 0.6rem;
-}
-.m-chip {
-  display: block;
-  width: 100%;
-  text-align: left;
-  border: none;
-  border-radius: 9px;
-  background: var(--oc-pink);
-  color: #fff;
-  padding: 0.6rem 0.75rem;
-  margin-bottom: 0.5rem;
-  line-height: 1.35;
-}
-.m-chip .what { display: block; font-weight: 600; }
-.m-chip .who { display: block; opacity: 0.9; font-size: 0.85rem; }
-.m-none { color: var(--muted); font-size: 0.88rem; margin: 0 0 0.6rem; }
-.m-book-btn {
-  width: 100%;
-  background: #fff;
-  border: 1px dashed #cdd1d4;
-  color: var(--oc-purple);
-  border-radius: 9px;
-  padding: 0.65rem;
-  font-weight: 600;
-}
-.m-book-btn:hover { border-color: var(--oc-pink); color: var(--oc-pink); }
-
 @media (max-width: 640px) {
-  .topbar { padding: 0.7rem 0.9rem; gap: 0.6rem; }
-  .logo { height: 32px; }
-  .app-name { font-size: 0.72rem; letter-spacing: 0.1em; }
-  main { padding: 0.85rem 0.9rem 1.5rem; }
-  .day-heading { font-size: 1.15rem; }
-
-  /* comfortable tap targets */
-  .date-controls { gap: 0.35rem; row-gap: 0.45rem; }
-  .icon-btn, .ghost-btn, .primary-btn, .danger-btn { padding: 0.5rem 0.8rem; }
-  .view-toggle .ghost-btn { padding: 0.5rem 0.7rem; }
-  .page-link { margin-right: 0; }
-
+  .topbar { padding: 0.85rem 1rem; }
+  main { padding: 0.85rem 1rem 1.5rem; }
   dialog .row { grid-template-columns: 1fr; }
-  dialog .repeat-row { grid-template-columns: 1fr; }
-
-  /* narrower row labels so week/month show more */
-  .grid-row, .week-row { grid-template-columns: 96px 1fr; }
-  .week-row { grid-template-columns: 96px repeat(5, 1fr); }
-  .desk-week-row { grid-template-columns: 96px repeat(5, 1fr); }
-  .desk-row { grid-template-columns: 118px 1fr; }
-  .room-label { font-size: 0.82rem; padding: 0.6rem 0.7rem; }
-  .desk-free, .desk-chip { padding: 0.6rem 0.7rem; font-size: 0.85rem; }
-
-  /* the FAB shouldn't cover content */
-  .fab { right: 0.9rem; bottom: 0.9rem; }
 }
