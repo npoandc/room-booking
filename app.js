@@ -1224,8 +1224,7 @@ function inviteMailto(b, emails) {
     `When: ${fmtDayLong(b.start)}, ${fmtTime(b.start)}–${fmtTime(b.end)}`,
     `Purpose: ${b.title}`,
     "",
-    "To add this to your Outlook calendar, click the link below:",
-    outlookUrl(b),
+    "To add this to your Outlook calendar, open the booking app, click the booking and use the 'Add to my calendar' button.",
     "",
     "Any changes or cancellations must be made in the room booking app:",
     APP_URL,
@@ -1374,7 +1373,7 @@ async function init() {
     $("#cal-menu").classList.toggle("hidden");
   });
   $("#cal-outlook").addEventListener("click", () =>
-    window.open(outlookUrl(managedBooking), "_blank", "noopener"));
+    downloadIcs(managedBooking));
   $("#invite-send").addEventListener("click", () => {
     const { good, bad } = splitEmails($("#invite-emails").value);
     const err = $("#invite-error");
