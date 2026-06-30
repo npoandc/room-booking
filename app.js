@@ -1131,7 +1131,7 @@ function icsStamp(d) {
   return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 }
 
-const APP_URL = "https://npoandc.github.io/room-booking/";
+const APP_URL = "https://booking.oliverandco.co.uk";
 
 function eventDescription(b) {
   return (
@@ -1224,9 +1224,10 @@ function inviteMailto(b, emails) {
     `When: ${fmtDayLong(b.start)}, ${fmtTime(b.start)}–${fmtTime(b.end)}`,
     `Purpose: ${b.title}`,
     "",
-    `Add it to your calendar: ${outlookUrl(b)}`,
+    "To add this to your Outlook calendar, click the link below:",
+    outlookUrl(b),
     "",
-    "Any change or cancellation is made in the room booking app:",
+    "Any changes or cancellations must be made in the room booking app:",
     APP_URL,
   ].join("\n");
   return `mailto:${emails.join(",")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
