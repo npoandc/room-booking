@@ -404,6 +404,7 @@ let managedBooking = null; // booking shown in the manage modal
 let searchText = '';
 let matchEls = [];
 let matchIndex = 0;
+let notifyData = null; // data for the post-change/cancel notify modal
 
 // ── Rendering ───────────────────────────────────────────────────────
 
@@ -909,12 +910,14 @@ async function submitBookingForm(event) {
 
   const submitBtn = $("#booking-submit");
   submitBtn.disabled = true;
+  let notifyPayload = null;
   try {
     if (editingBooking) {
       const changedBy = $("#f-changed-by").value.trim();
       const reason = $("#f-reason").value.trim();
       if (!changedBy) return formError("Please enter who is making this change.");
       if (reason.length < 3) return formError("Please give a reason for this change.");
+      notifyPayload = { booking: payload, action: "changed", oldBooking: { ...managedBooking }, seriesCount: null, changedBy, reason };
       await store.change(editingBooking.id, payload, changedBy, reason);
       localStorage.setItem("my-name", changedBy);
     } else if (isMonthly) {
@@ -948,6 +951,9 @@ async function submitBookingForm(event) {
     $("#booking-modal").close();
     currentDate = dateAt(f.dateStr, 0);
     await render();
+    if (notifyPayload) {
+      openNotifyModal(notifyPayload);
+    }
     if (inviteEmails.length) {
       showNotice(`Opening an email invite for ${inviteEmails.length} ${inviteEmails.length > 1 ? "people" : "person"} — check your email program, then press Send.`);
       window.location.href = inviteMailto(payload, inviteEmails);
@@ -1037,15 +1043,20 @@ async function submitCancelForm(event) {
   }
   const scope = document.querySelector('input[name="cscope"]:checked')?.value || "one";
   try {
+    const snapshot = { ...managedBooking };
+    let seriesCount = null;
     if (managedBooking.seriesId && scope === "future") {
-      const n = await store.cancelSeries(managedBooking.id, name, reason);
-      showNotice(`${n} repeating booking${n === 1 ? "" : "s"} cancelled.`);
+      seriesCount = await store.cancelSeries(managedBooking.id, name, reason);
     } else {
       await store.cancel(managedBooking.id, name, reason);
     }
     localStorage.setItem("my-name", name);
     $("#manage-modal").close();
     await render();
+    if (seriesCount !== null) {
+      showNotice(`${seriesCount} repeating booking${seriesCount === 1 ? "" : "s"} cancelled.`);
+    }
+    openNotifyModal({ booking: snapshot, action: "cancelled", oldBooking: null, seriesCount, changedBy: name, reason });
   } catch (err) {
     errEl.textContent = err.message;
     errEl.classList.remove("hidden");
@@ -1221,6 +1232,67 @@ function inviteMailto(b, emails) {
   return `mailto:${emails.join(",")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
+function openNotifyModal(data) {
+  notifyData = data;
+  const { booking: b, action, oldBooking, seriesCount } = data;
+  const titleEl = $("#notify-title");
+  const summaryEl = $("#notify-summary");
+
+  if (action === "cancelled") {
+    titleEl.textContent = seriesCount !== null
+      ? `${seriesCount} booking${seriesCount === 1 ? "" : "s"} cancelled`
+      : "Booking cancelled";
+    summaryEl.textContent =
+      `${b.room} — ${fmtDayLong(b.start)}, ${fmtTime(b.start)}–${fmtTime(b.end)}`;
+  } else {
+    titleEl.textContent = "Booking changed";
+    let summary = `${b.room} — ${fmtDayLong(b.start)}, ${fmtTime(b.start)}–${fmtTime(b.end)}`;
+    if (oldBooking && (oldBooking.room !== b.room ||
+        oldBooking.start.getTime() !== b.start.getTime())) {
+      summary += `\nPreviously: ${oldBooking.room} — ${fmtDayLong(oldBooking.start)}, ${fmtTime(oldBooking.start)}–${fmtTime(oldBooking.end)}`;
+    }
+    summaryEl.textContent = summary;
+  }
+
+  $("#notify-email").value = "";
+  $("#notify-modal").showModal();
+}
+
+function buildNotifyMailto(email, { booking: b, action, oldBooking, seriesCount, changedBy, reason }) {
+  const isCancel = action === "cancelled";
+  const dateStr = fmtDayLong(b.start);
+  const subject = isCancel
+    ? `Booking cancelled: ${b.room} — ${dateStr}`
+    : `Booking changed: ${b.room} — ${dateStr}`;
+
+  const lines = ["Hi,", ""];
+  if (isCancel) {
+    lines.push("A room booking has been cancelled.", "");
+    lines.push(`Room: ${b.room}`);
+    lines.push(`Date: ${dateStr}`);
+    lines.push(`Time: ${fmtTime(b.start)}–${fmtTime(b.end)}`);
+    lines.push(`Purpose: ${b.title}`);
+    lines.push(`Booked by: ${b.bookedBy}`);
+    if (seriesCount) lines.push(`Note: ${seriesCount} booking${seriesCount === 1 ? "" : "s"} in the series were cancelled.`);
+    if (changedBy) lines.push("", `Cancelled by: ${changedBy}`);
+    if (reason) lines.push(`Reason: ${reason}`);
+  } else {
+    lines.push("A room booking has been changed.", "");
+    lines.push(`Room: ${b.room}`);
+    lines.push(`New date: ${dateStr}`);
+    lines.push(`New time: ${fmtTime(b.start)}–${fmtTime(b.end)}`);
+    lines.push(`Purpose: ${b.title}`);
+    if (oldBooking) {
+      lines.push("", `Previously: ${oldBooking.room}, ${fmtDayLong(oldBooking.start)}, ${fmtTime(oldBooking.start)}–${fmtTime(oldBooking.end)}`);
+    }
+    if (changedBy) lines.push("", `Changed by: ${changedBy}`);
+    if (reason) lines.push(`Reason: ${reason}`);
+  }
+
+  lines.push("", "View the room booking app:", APP_URL);
+  return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
+}
+
 function googleUrl(b) {
   const t = calendarEventText(b);
   const q = new URLSearchParams({
@@ -1347,6 +1419,13 @@ async function init() {
     matchEls[matchIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     $("#search-count").textContent = `${matchIndex + 1} / ${matchEls.length}`;
   });
+  $("#notify-send").addEventListener("click", () => {
+    const email = $("#notify-email").value.trim();
+    if (!email || !notifyData) return;
+    window.location.href = buildNotifyMailto(email, notifyData);
+    $("#notify-modal").close();
+  });
+
   $("#search-prev").addEventListener("click", () => {
     if (!matchEls.length) return;
     matchIndex = (matchIndex - 1 + matchEls.length) % matchEls.length;

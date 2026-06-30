@@ -211,9 +211,27 @@
     </div>
   </dialog>
 
+  <!-- Notify email after a booking is changed or cancelled -->
+  <dialog id="notify-modal">
+    <div class="manage">
+      <h2 id="notify-title">Booking changed</h2>
+      <p id="notify-summary" class="details"></p>
+      <div class="notify-row">
+        <p class="cal-menu-label">Send a notification email to:</p>
+        <div class="invite-controls">
+          <input type="text" id="notify-email" placeholder="e.g. jane@oliverandco.co.uk" maxlength="200" autocomplete="off">
+          <button type="button" class="ghost-btn" id="notify-send">Send email</button>
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" class="ghost-btn" data-close>Skip</button>
+      </div>
+    </div>
+  </dialog>
+
   <footer>Bookable Monday–Friday, 8:00 am – 6:00 pm</footer>
 
   <script src="config.js"></script>
-  <script type="module" src="app.js?v=2"></script>
+  <script type="module" src="app.js?v=3"></script>
 </body>
 </html>

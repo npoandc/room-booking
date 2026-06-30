@@ -559,6 +559,8 @@ dialog .repeat-row { grid-template-columns: 1.3fr 1fr; }
 .invite-controls { display: flex; gap: 0.5rem; }
 .invite-controls input { flex: 1; }
 .invite-controls .ghost-btn { white-space: nowrap; }
+.notify-row { margin-top: 0.75rem; }
+#notify-summary { white-space: pre-line; }
 
 .edit-only { border-top: 1px dashed var(--line); padding-top: 0.9rem; margin-top: 0.25rem; }
 
