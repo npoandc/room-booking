@@ -53,6 +53,7 @@ function normalize(row) {
     end: new Date(row.ends_at),
     seriesId: row.series_id || null,
     createdAt: row.created_at ? new Date(row.created_at) : null,
+    notes: row.notes || null,
   };
 }
 
@@ -90,6 +91,7 @@ async function supabaseStore() {
       return rpc("create_booking", {
         p_room: b.room, p_title: b.title, p_booked_by: b.bookedBy,
         p_starts_at: b.start.toISOString(), p_ends_at: b.end.toISOString(),
+        p_notes: b.notes || null,
       });
     },
     createRecurring(b, intervalDays, untilDateStr) {
@@ -97,6 +99,7 @@ async function supabaseStore() {
         p_room: b.room, p_title: b.title, p_booked_by: b.bookedBy,
         p_starts_at: b.start.toISOString(), p_ends_at: b.end.toISOString(),
         p_interval_days: intervalDays, p_until: untilDateStr,
+        p_notes: b.notes || null,
       });
     },
     createMonthly(b, nth, weekday, untilDateStr) {
@@ -104,6 +107,7 @@ async function supabaseStore() {
         p_room: b.room, p_title: b.title, p_booked_by: b.bookedBy,
         p_starts_at: b.start.toISOString(), p_ends_at: b.end.toISOString(),
         p_nth: nth, p_weekday: weekday, p_until: untilDateStr,
+        p_notes: b.notes || null,
       });
     },
     cancelSeries(id, changedBy, reason) {
@@ -116,6 +120,7 @@ async function supabaseStore() {
         p_id: id, p_changed_by: changedBy, p_reason: reason,
         p_room: b.room, p_starts_at: b.start.toISOString(),
         p_ends_at: b.end.toISOString(), p_title: b.title,
+        p_notes: b.notes !== undefined ? b.notes : null,
       });
     },
     cancel(id, changedBy, reason) {
@@ -196,7 +201,7 @@ function demoStore() {
         id: crypto.randomUUID(), room: b.room, title: b.title,
         booked_by: b.bookedBy, starts_at: b.start.toISOString(),
         ends_at: b.end.toISOString(), status: "active",
-        created_at: new Date().toISOString(),
+        created_at: new Date().toISOString(), notes: b.notes || null,
       });
       save(db);
     },
@@ -777,6 +782,7 @@ function openCreateModal(room, startMin) {
   $("#f-start").value = startMin;
   $("#f-end").value = Math.min(startMin + 60, CLOSE_MIN);
   $("#f-title").value = "";
+  $("#f-notes").value = "";
   $("#f-name").value = localStorage.getItem("my-name") || "";
   $("#f-invite").value = "";
   $("#f-invite-field").classList.remove("hidden");
@@ -801,6 +807,7 @@ function openEditModal(booking) {
   $("#f-start").value = minsOf(booking.start);
   $("#f-end").value = minsOf(booking.end);
   $("#f-title").value = booking.title;
+  $("#f-notes").value = booking.notes || "";
   $("#f-name").value = booking.bookedBy;
   $("#f-changed-by").value = localStorage.getItem("my-name") || "";
   $("#f-reason").value = "";
@@ -882,7 +889,8 @@ async function submitBookingForm(event) {
   if (!title) return formError("Please enter a purpose for the booking.");
   if (!name) return formError("Please enter your name.");
 
-  const payload = { room: f.room, title, bookedBy: name, start: f.start, end: f.end };
+  const notes = $("#f-notes").value.trim() || null;
+  const payload = { room: f.room, title, bookedBy: name, start: f.start, end: f.end, notes };
 
   const repeatVal = $("#f-repeat").value;
   const isMonthly = repeatVal === "monthly";
@@ -967,6 +975,7 @@ async function openManageModal(booking) {
     ["When", `${fmtDayLong(booking.start)}, ${fmtTime(booking.start)}–${fmtTime(booking.end)}`],
     ["Booked by", booking.bookedBy],
   ];
+  if (booking.notes) lines.push(["Notes", booking.notes]);
   if (booking.createdAt) {
     lines.push(["Added", booking.createdAt.toLocaleString("en-GB", {
       day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
