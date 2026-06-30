@@ -86,6 +86,19 @@ body {
 }
 .date-controls input[type="date"] { width: auto; }
 
+.search-input {
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  width: 130px;
+  outline: none;
+}
+.search-input:focus { border-color: var(--oc-pink); }
+
 main { padding: 1.25rem 1.5rem 2rem; max-width: 1500px; margin: 0 auto; }
 
 .day-heading {

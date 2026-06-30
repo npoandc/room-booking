@@ -99,6 +99,13 @@ async function supabaseStore() {
         p_interval_days: intervalDays, p_until: untilDateStr,
       });
     },
+    createMonthly(b, nth, weekday, untilDateStr) {
+      return rpc("create_monthly_booking", {
+        p_room: b.room, p_title: b.title, p_booked_by: b.bookedBy,
+        p_starts_at: b.start.toISOString(), p_ends_at: b.end.toISOString(),
+        p_nth: nth, p_weekday: weekday, p_until: untilDateStr,
+      });
+    },
     cancelSeries(id, changedBy, reason) {
       return rpc("cancel_booking_series", {
         p_id: id, p_changed_by: changedBy, p_reason: reason,
@@ -223,6 +230,59 @@ function demoStore() {
       save(db);
       return { series_id: seriesId, created, skipped };
     },
+    async createMonthly(b, nth, weekday, untilDateStr) {
+      const db = load();
+      const seriesId = crypto.randomUUID();
+      const until = dateAt(untilDateStr, CLOSE_MIN);
+      const created = [], skipped = [];
+      const startDate = new Date(b.start);
+      let y = startDate.getFullYear();
+      let mo = startDate.getMonth() + 1;
+      for (let i = 0; i < 24; i++) {
+        const monthStart = new Date(y, mo - 1, 1);
+        if (monthStart > until) break;
+        // Collect all occurrences of the target weekday (0=Mon..4=Fri) this month
+        const occurrences = [];
+        const d = new Date(y, mo - 1, 1);
+        while (d.getMonth() === mo - 1) {
+          const dow = (d.getDay() + 6) % 7; // 0=Mon..6=Sun
+          if (dow === weekday) occurrences.push(new Date(d));
+          d.setDate(d.getDate() + 1);
+        }
+        const count = occurrences.length;
+        let candidate = null;
+        if (nth > 0 && nth <= count) candidate = occurrences[nth - 1];
+        else if (nth === -1 && count > 0) candidate = occurrences[count - 1];
+        if (candidate) {
+          const start = new Date(candidate);
+          start.setHours(startDate.getHours(), startDate.getMinutes(), 0, 0);
+          const duration = b.end - b.start;
+          const end = new Date(start.getTime() + duration);
+          const candStr = toDateInput(start);
+          if (start >= b.start && start <= until) {
+            const inst = { ...b, start, end };
+            if (overlaps(db, inst, null)) {
+              skipped.push(candStr);
+            } else {
+              db.bookings.push({
+                id: crypto.randomUUID(), room: b.room, title: b.title,
+                booked_by: b.bookedBy, starts_at: start.toISOString(),
+                ends_at: end.toISOString(), status: "active", series_id: seriesId,
+                created_at: new Date().toISOString(),
+              });
+              created.push(candStr);
+            }
+          }
+        }
+        mo++;
+        if (mo > 12) { mo = 1; y++; }
+      }
+      if (!created.length) {
+        throw new Error(`${b.room} is already booked at that time on every chosen date.`);
+      }
+      save(db);
+      return { series_id: seriesId, created, skipped };
+    },
     async cancelSeries(id, changedBy, reason) {
       const db = load();
       const row = db.bookings.find((x) => x.id === id && x.status === "active");
@@ -336,6 +396,7 @@ currentDate.setHours(0, 0, 0, 0);
 let dayBookings = [];
 let editingBooking = null; // set while the form is editing an existing booking
 let managedBooking = null; // booking shown in the manage modal
+let searchText = '';
 
 // ── Rendering ───────────────────────────────────────────────────────
 
@@ -373,6 +434,8 @@ async function render() {
     showBanner(`Could not load bookings: ${err.message}`);
     dayBookings = [];
   }
+  if (searchText) dayBookings = dayBookings.filter(b =>
+    b.title.toLowerCase().includes(searchText) || b.bookedBy.toLowerCase().includes(searchText));
 
   grid.innerHTML = "";
 
@@ -471,6 +534,8 @@ async function renderMonth() {
   } catch (err) {
     showBanner(`Could not load bookings: ${err.message}`);
   }
+  if (searchText) bookings = bookings.filter(b =>
+    b.title.toLowerCase().includes(searchText) || b.bookedBy.toLowerCase().includes(searchText));
   const byDate = {};
   for (const b of bookings) {
     const k = toDateInput(b.start);
@@ -562,6 +627,8 @@ async function renderWeek() {
   } catch (err) {
     showBanner(`Could not load bookings: ${err.message}`);
   }
+  if (searchText) weekBookings = weekBookings.filter(b =>
+    b.title.toLowerCase().includes(searchText) || b.bookedBy.toLowerCase().includes(searchText));
 
   const todayStr = toDateInput(new Date());
   const grid = $("#grid");
@@ -662,6 +729,7 @@ function openCreateModal(room, startMin) {
   $("#f-repeat").value = "";
   $("#f-until").value = "";
   $("#f-until-label").classList.add("hidden");
+  $("#f-monthly-row").classList.add("hidden");
   $("#f-room").value = room;
   $("#f-date").value = toDateInput(currentDate);
   $("#f-start").value = startMin;
@@ -774,9 +842,11 @@ async function submitBookingForm(event) {
 
   const payload = { room: f.room, title, bookedBy: name, start: f.start, end: f.end };
 
-  const repeatDays = Number($("#f-repeat").value) || 0;
+  const repeatVal = $("#f-repeat").value;
+  const isMonthly = repeatVal === "monthly";
+  const repeatDays = isMonthly ? 0 : (Number(repeatVal) || 0);
   const untilStr = $("#f-until").value;
-  if (!editingBooking && repeatDays && !untilStr)
+  if (!editingBooking && (repeatDays || isMonthly) && !untilStr)
     return formError("Please choose the last date for the repeat.");
 
   const { good: inviteEmails, bad: inviteBad } = editingBooking
@@ -797,6 +867,19 @@ async function submitBookingForm(event) {
       if (reason.length < 3) return formError("Please give a reason for this change.");
       await store.change(editingBooking.id, payload, changedBy, reason);
       localStorage.setItem("my-name", changedBy);
+    } else if (isMonthly) {
+      const nth = Number($("#f-monthly-nth").value);
+      const weekday = Number($("#f-monthly-day").value);
+      const result = await store.createMonthly(payload, nth, weekday, untilStr);
+      if (result.skipped?.length) {
+        const days = result.skipped.map((d) =>
+          dateAt(d, 0).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+        );
+        showNotice(
+          `${result.created.length} bookings made. ⚠️ These dates were skipped because ${f.room} is already booked then: ${days.join(", ")}.`
+        );
+      }
+      localStorage.setItem("my-name", name);
     } else if (repeatDays) {
       const result = await store.createRecurring(payload, repeatDays, untilStr);
       if (result.skipped.length) {
@@ -1147,11 +1230,14 @@ async function init() {
   }
 
   $("#f-repeat").addEventListener("change", () => {
-    const repeating = !!$("#f-repeat").value;
+    const val = $("#f-repeat").value;
+    const isMonthly = val === "monthly";
+    const repeating = !!val;
+    $("#f-monthly-row").classList.toggle("hidden", !isMonthly);
     $("#f-until-label").classList.toggle("hidden", !repeating);
     if (repeating && !$("#f-until").value) {
       const d = dateAt($("#f-date").value || toDateInput(currentDate), 0);
-      d.setDate(d.getDate() + 12 * 7); // suggest ~3 months of repeats
+      d.setDate(d.getDate() + 12 * 7);
       $("#f-until").value = toDateInput(d);
     }
   });
@@ -1196,6 +1282,11 @@ async function init() {
   for (const btn of document.querySelectorAll("[data-close]")) {
     btn.addEventListener("click", (e) => e.target.closest("dialog").close());
   }
+
+  $("#search-input").addEventListener("input", () => {
+    searchText = $("#search-input").value.trim().toLowerCase();
+    render();
+  });
 
   await render();
 }

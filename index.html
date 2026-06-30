@@ -29,6 +29,7 @@
         <button id="view-week" class="ghost-btn">Week</button>
         <button id="view-month" class="ghost-btn">Month</button>
       </div>
+      <input type="text" id="search-input" class="search-input" placeholder="Search…" autocomplete="off">
       <button id="prev-day" class="icon-btn" title="Previous" aria-label="Previous">‹</button>
       <button id="today-btn" class="ghost-btn">Today</button>
       <button id="next-day" class="icon-btn" title="Next" aria-label="Next">›</button>
@@ -80,10 +81,32 @@
             <option value="28">Every 4 weeks</option>
             <option value="42">Every 6 weeks</option>
             <option value="56">Every 8 weeks</option>
+            <option value="monthly">Monthly (set day)</option>
           </select>
         </label>
         <label id="f-until-label" class="hidden">Last date
           <input type="date" id="f-until">
+        </label>
+      </div>
+
+      <div id="f-monthly-row" class="row hidden">
+        <label>Which
+          <select id="f-monthly-nth">
+            <option value="1">1st</option>
+            <option value="2">2nd</option>
+            <option value="3">3rd</option>
+            <option value="4">4th</option>
+            <option value="-1">Last</option>
+          </select>
+        </label>
+        <label>Day
+          <select id="f-monthly-day">
+            <option value="0">Monday</option>
+            <option value="1">Tuesday</option>
+            <option value="2">Wednesday</option>
+            <option value="3">Thursday</option>
+            <option value="4">Friday</option>
+          </select>
         </label>
       </div>
 
