@@ -138,12 +138,12 @@ async function supabaseStore() {
           .from("booking_changes")
           .select("*, bookings(title)")
           .order("changed_at", { ascending: false })
-          .limit(200),
+          .limit(500),
         client
           .from("bookings")
           .select("room, title, booked_by, starts_at, ends_at, created_at")
           .order("created_at", { ascending: false })
-          .limit(200),
+          .limit(500),
       ]);
       if (changesRes.error) throw new Error(changesRes.error.message);
       if (createdRes.error) throw new Error(createdRes.error.message);
