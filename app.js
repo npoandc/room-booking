@@ -7,7 +7,7 @@ const ROOMS = [
   "Room 1",
   "Room 2",
   "Room 3",
-  "David Owen Suite",
+  "Owen Suite",
   "Hoole Meeting Room",
 ];
 
@@ -17,7 +17,7 @@ const ROOM_COLOURS = {
   "Room 1": ["#2e4057", "#ffffff"],            // blue
   "Room 2": ["#2e5556", "#ffffff"],            // green
   "Room 3": ["#311b3a", "#ffffff"],            // purple
-  "David Owen Suite": ["#dbb75a", "#222628"],  // yellow (granite text)
+  "Owen Suite": ["#dbb75a", "#222628"],  // yellow (granite text)
   "Hoole Meeting Room": ["#222628", "#ffffff"],// granite
 };
 
