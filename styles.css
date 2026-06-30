@@ -98,6 +98,9 @@ body {
   outline: none;
 }
 .search-input:focus { border-color: var(--oc-pink); }
+.search-count { font-size: 0.78rem; color: var(--muted); white-space: nowrap; min-width: 2.8rem; text-align: center; }
+.search-hit { outline: 2px solid var(--oc-yellow) !important; outline-offset: 1px; z-index: 5; }
+.search-hit-active { outline: 2.5px solid var(--oc-pink) !important; outline-offset: 2px; z-index: 6; }
 
 main { padding: 1.25rem 1.5rem 2rem; max-width: 1500px; margin: 0 auto; }
 

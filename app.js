@@ -397,6 +397,8 @@ let dayBookings = [];
 let editingBooking = null; // set while the form is editing an existing booking
 let managedBooking = null; // booking shown in the manage modal
 let searchText = '';
+let matchEls = [];
+let matchIndex = 0;
 
 // ── Rendering ───────────────────────────────────────────────────────
 
@@ -434,8 +436,6 @@ async function render() {
     showBanner(`Could not load bookings: ${err.message}`);
     dayBookings = [];
   }
-  if (searchText) dayBookings = dayBookings.filter(b =>
-    b.title.toLowerCase().includes(searchText) || b.bookedBy.toLowerCase().includes(searchText));
 
   grid.innerHTML = "";
 
@@ -505,6 +505,7 @@ async function render() {
     row.appendChild(track);
     grid.appendChild(row);
   }
+  applySearch();
 }
 
 async function renderMonth() {
@@ -534,8 +535,6 @@ async function renderMonth() {
   } catch (err) {
     showBanner(`Could not load bookings: ${err.message}`);
   }
-  if (searchText) bookings = bookings.filter(b =>
-    b.title.toLowerCase().includes(searchText) || b.bookedBy.toLowerCase().includes(searchText));
   const byDate = {};
   for (const b of bookings) {
     const k = toDateInput(b.start);
@@ -575,6 +574,7 @@ async function renderMonth() {
 
       const dayB = byDate[dStr] || [];
       if (inMonth && dayB.length) {
+        cell.dataset.bookingText = dayB.map(b => b.title + ' ' + b.bookedBy).join(' ').toLowerCase();
         const dots = document.createElement("div");
         dots.className = "month-dots";
         const bookedRooms = new Set(dayB.map((b) => b.room));
@@ -603,6 +603,7 @@ async function renderMonth() {
     }
     grid.appendChild(row);
   }
+  applySearch();
 }
 
 async function renderWeek() {
@@ -627,9 +628,6 @@ async function renderWeek() {
   } catch (err) {
     showBanner(`Could not load bookings: ${err.message}`);
   }
-  if (searchText) weekBookings = weekBookings.filter(b =>
-    b.title.toLowerCase().includes(searchText) || b.bookedBy.toLowerCase().includes(searchText));
-
   const todayStr = toDateInput(new Date());
   const grid = $("#grid");
   grid.innerHTML = "";
@@ -692,6 +690,50 @@ async function renderWeek() {
     }
     grid.appendChild(row);
   }
+  applySearch();
+}
+
+function applySearch() {
+  document.querySelectorAll('.search-hit, .search-hit-active').forEach(el => {
+    el.classList.remove('search-hit', 'search-hit-active');
+  });
+
+  const countEl = $('#search-count');
+  const prevBtn = $('#search-prev');
+  const nextBtn = $('#search-next');
+
+  if (!searchText) {
+    countEl.textContent = '';
+    prevBtn.hidden = true;
+    nextBtn.hidden = true;
+    matchEls = [];
+    return;
+  }
+
+  const dayMatches = [...document.querySelectorAll('.booking-block')].filter(el =>
+    el.textContent.toLowerCase().includes(searchText));
+  const weekMatches = [...document.querySelectorAll('.week-chip')].filter(el =>
+    (el.textContent + ' ' + el.title).toLowerCase().includes(searchText));
+  const monthMatches = [...document.querySelectorAll('.month-cell[data-booking-text]')].filter(el =>
+    el.dataset.bookingText.includes(searchText));
+
+  matchEls = [...dayMatches, ...weekMatches, ...monthMatches];
+
+  if (matchEls.length === 0) {
+    countEl.textContent = 'not found';
+    prevBtn.hidden = true;
+    nextBtn.hidden = true;
+    return;
+  }
+
+  matchIndex = Math.max(0, Math.min(matchIndex, matchEls.length - 1));
+  matchEls.forEach(el => el.classList.add('search-hit'));
+  matchEls[matchIndex].classList.add('search-hit-active');
+  matchEls[matchIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  countEl.textContent = `${matchIndex + 1} / ${matchEls.length}`;
+  prevBtn.hidden = matchEls.length <= 1;
+  nextBtn.hidden = matchEls.length <= 1;
 }
 
 function showBanner(text) {
@@ -1285,7 +1327,24 @@ async function init() {
 
   $("#search-input").addEventListener("input", () => {
     searchText = $("#search-input").value.trim().toLowerCase();
+    matchIndex = 0;
     render();
+  });
+  $("#search-next").addEventListener("click", () => {
+    if (!matchEls.length) return;
+    matchIndex = (matchIndex + 1) % matchEls.length;
+    matchEls.forEach(el => el.classList.remove('search-hit-active'));
+    matchEls[matchIndex].classList.add('search-hit-active');
+    matchEls[matchIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    $("#search-count").textContent = `${matchIndex + 1} / ${matchEls.length}`;
+  });
+  $("#search-prev").addEventListener("click", () => {
+    if (!matchEls.length) return;
+    matchIndex = (matchIndex - 1 + matchEls.length) % matchEls.length;
+    matchEls.forEach(el => el.classList.remove('search-hit-active'));
+    matchEls[matchIndex].classList.add('search-hit-active');
+    matchEls[matchIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    $("#search-count").textContent = `${matchIndex + 1} / ${matchEls.length}`;
   });
 
   await render();
