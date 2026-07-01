@@ -200,7 +200,7 @@ BEGIN
   IF p_until IS NULL OR p_until < p_booking_date THEN
     RAISE EXCEPTION 'Please choose when the repeat should finish.';
   END IF;
-  IF p_until > p_booking_date + 366 THEN
+  IF p_until > p_booking_date + 365 THEN
     RAISE EXCEPTION 'Repeating bookings can run for up to one year.';
   END IF;
 
@@ -320,7 +320,6 @@ DECLARE
   v_series  uuid;
   v_date    date;
   v_ids     uuid[];
-  v_row     desk_bookings%rowtype;
 BEGIN
   IF COALESCE(TRIM(p_changed_by), '') = '' THEN
     RAISE EXCEPTION 'Please enter who is cancelling this booking.';
@@ -349,7 +348,7 @@ BEGIN
   SELECT id, 'cancel', TRIM(p_changed_by), TRIM(p_reason), desk, booking_date
     FROM desk_bookings WHERE id = ANY(v_ids);
 
-  RETURN array_length(v_ids, 1);
+  RETURN COALESCE(array_length(v_ids, 1), 0);
 END $$;
 
 GRANT EXECUTE ON FUNCTION public.create_recurring_desk_booking(text,text,text,date,text,int,date) TO anon;
