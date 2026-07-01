@@ -61,7 +61,7 @@ declare
   v_end   timestamp := p_ends_at   at time zone 'Europe/London';
 begin
   if p_room is null or p_room not in
-    ('Board Room', 'Room 1', 'Room 2', 'Room 3', 'David Owen Suite', 'Hoole Meeting Room')
+    ('Board Room', 'Room 1', 'Room 2', 'Room 3', 'Owen Suite', 'Hoole Meeting Room')
   then
     raise exception 'Unknown room.';
   end if;
