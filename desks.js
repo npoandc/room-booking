@@ -43,6 +43,7 @@ function normalize(row) {
     department: row.department || "",
     date: row.booking_date, // 'YYYY-MM-DD'
     createdAt: row.created_at ? new Date(row.created_at) : null,
+    seriesId: row.series_id || null,
   };
 }
 
@@ -85,6 +86,25 @@ async function supabaseStore() {
     },
     cancel(id, changedBy, reason) {
       return rpc("cancel_desk_booking", {
+        p_id: id, p_changed_by: changedBy, p_reason: reason,
+      });
+    },
+    createRecurring(b, intervalDays, untilStr) {
+      return rpc("create_recurring_desk_booking", {
+        p_desk: b.desk, p_booked_by: b.bookedBy, p_note: b.note,
+        p_booking_date: b.date, p_department: b.department,
+        p_interval_days: intervalDays, p_until: untilStr,
+      });
+    },
+    createMonthly(b, nth, weekday, untilStr) {
+      return rpc("create_monthly_desk_booking", {
+        p_desk: b.desk, p_booked_by: b.bookedBy, p_note: b.note,
+        p_booking_date: b.date, p_department: b.department,
+        p_nth: nth, p_weekday: weekday, p_until: untilStr,
+      });
+    },
+    cancelSeries(id, changedBy, reason) {
+      return rpc("cancel_desk_booking_series", {
         p_id: id, p_changed_by: changedBy, p_reason: reason,
       });
     },
@@ -136,6 +156,12 @@ function demoStore() {
       (x) => x.status === "active" && x.id !== ignoreId && x.desk === desk && x.booking_date === date
     );
 
+  function checkClashFn(desk, date, ignoreId) {
+    return load().bookings.find(
+      (x) => x.status === "active" && x.id !== ignoreId && x.desk === desk && x.booking_date === date
+    );
+  }
+
   return {
     live: false,
     async list(startStr, endStr) {
@@ -184,6 +210,87 @@ function demoStore() {
         old_desk: row.desk, old_date: row.booking_date, changed_at: new Date().toISOString(),
       });
       save(db);
+    },
+    createRecurring(b, intervalDays, untilStr) {
+      const until = new Date(untilStr);
+      const results = { created: [], skipped: [] };
+      let d = new Date(b.date);
+      let i = 0;
+      const seriesId = crypto.randomUUID();
+      while (d <= until && i < 60) {
+        const dateStr = d.toISOString().slice(0, 10);
+        const clash = checkClashFn(b.desk, dateStr, null);
+        if (clash) {
+          results.skipped.push(dateStr);
+        } else {
+          const db = load();
+          db.bookings.push({
+            id: crypto.randomUUID(), desk: b.desk, booked_by: b.bookedBy,
+            note: b.note, department: b.department, booking_date: dateStr,
+            series_id: seriesId, status: "active", created_at: new Date().toISOString(),
+          });
+          save(db);
+          results.created.push(dateStr);
+        }
+        d = new Date(d);
+        d.setDate(d.getDate() + intervalDays);
+        i++;
+      }
+      return Promise.resolve({ series_id: seriesId, ...results });
+    },
+    createMonthly(b, nth, weekday, untilStr) {
+      const until = new Date(untilStr);
+      const results = { created: [], skipped: [] };
+      const seriesId = crypto.randomUUID();
+      const start = new Date(b.date);
+      let year = start.getFullYear(), month = start.getMonth();
+      for (let m = 0; m < 24; m++) {
+        const monthStart = new Date(year, month, 1);
+        if (monthStart > until) break;
+        const days = [];
+        for (let d = new Date(year, month, 1); d.getMonth() === month; d.setDate(d.getDate() + 1)) {
+          if (d.getDay() !== 0 && d.getDay() !== 6 && (d.getDay() - 1 + 7) % 7 === weekday) {
+            days.push(new Date(d));
+          }
+        }
+        const candidate = nth === -1 ? days[days.length - 1] : days[nth - 1];
+        if (candidate && candidate >= start && candidate <= until) {
+          const dateStr = candidate.toISOString().slice(0, 10);
+          const clash = checkClashFn(b.desk, dateStr, null);
+          if (clash) {
+            results.skipped.push(dateStr);
+          } else {
+            const db = load();
+            db.bookings.push({
+              id: crypto.randomUUID(), desk: b.desk, booked_by: b.bookedBy,
+              note: b.note, department: b.department, booking_date: dateStr,
+              series_id: seriesId, status: "active", created_at: new Date().toISOString(),
+            });
+            save(db);
+            results.created.push(dateStr);
+          }
+        }
+        month++;
+        if (month > 11) { month = 0; year++; }
+      }
+      return Promise.resolve({ series_id: seriesId, ...results });
+    },
+    cancelSeries(id, changedBy, reason) {
+      const db = load();
+      const row = db.bookings.find((x) => x.id === id && x.status === "active");
+      if (!row || !row.series_id) return Promise.reject(new Error("Not part of a series."));
+      const toCancel = db.bookings.filter(
+        (x) => x.series_id === row.series_id && x.booking_date >= row.booking_date && x.status === "active"
+      );
+      toCancel.forEach((x) => {
+        x.status = "cancelled";
+        db.changes.push({
+          booking_id: x.id, action: "cancel", changed_by: changedBy, reason,
+          old_desk: x.desk, old_date: x.booking_date, changed_at: new Date().toISOString(),
+        });
+      });
+      save(db);
+      return Promise.resolve(toCancel.length);
     },
     async history(id) {
       return load().changes.filter((c) => c.booking_id === id);
@@ -598,6 +705,11 @@ function openCreateModal(desk, dateStr) {
   $("#f-note").value = "";
   $("#f-changed-by").value = "";
   $("#f-reason").value = "";
+  $("#f-repeat").value = "";
+  $("#f-until").value = "";
+  $("#f-until-label").classList.add("hidden");
+  $("#f-monthly-row").classList.add("hidden");
+  $("#repeat-row").classList.remove("hidden");
   clearFormMessages();
   checkClash();
   $("#booking-modal").showModal();
@@ -616,6 +728,7 @@ function openEditModal(booking) {
   $("#f-note").value = booking.note;
   $("#f-changed-by").value = localStorage.getItem("my-name") || "";
   $("#f-reason").value = "";
+  $("#repeat-row").classList.add("hidden");
   clearFormMessages();
   checkClash();
   $("#booking-modal").showModal();
@@ -674,6 +787,13 @@ async function submitBookingForm(event) {
     return formError(
       `Invites can only be sent to Oliver & Co email addresses (…${EMAIL_DOMAIN}). Please remove: ${inviteBad.join(", ")}`
     );
+  const repeatVal = $("#f-repeat").value;
+  const isMonthly = repeatVal === "monthly";
+  const repeatDays = isMonthly ? 0 : (Number(repeatVal) || 0);
+  const untilStr = $("#f-until").value;
+  if (!editingBooking && (repeatDays || isMonthly) && !untilStr)
+    return formError("Please choose the last date for the repeat.");
+
   const submitBtn = $("#booking-submit");
   submitBtn.disabled = true;
   try {
@@ -684,6 +804,30 @@ async function submitBookingForm(event) {
       if (reason.length < 3) return formError("Please give a reason for this change.");
       await store.change(editingBooking.id, payload, changedBy, reason);
       localStorage.setItem("my-name", changedBy);
+    } else if (isMonthly) {
+      const nth = Number($("#f-monthly-nth").value);
+      const weekday = Number($("#f-monthly-day").value);
+      const result = await store.createMonthly(payload, nth, weekday, untilStr);
+      if (result.skipped?.length) {
+        const days = result.skipped.map((d) =>
+          parseDate(d).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+        );
+        showNotice(
+          `${result.created.length} bookings made. ⚠️ These dates were skipped because ${payload.desk} is already booked then: ${days.join(", ")}.`
+        );
+      }
+      localStorage.setItem("my-name", name);
+    } else if (repeatDays) {
+      const result = await store.createRecurring(payload, repeatDays, untilStr);
+      if (result.skipped.length) {
+        const days = result.skipped.map((d) =>
+          parseDate(d).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
+        );
+        showNotice(
+          `${result.created.length} bookings made. ⚠️ These dates were skipped because ${payload.desk} is already booked then: ${days.join(", ")}.`
+        );
+      }
+      localStorage.setItem("my-name", name);
     } else {
       await store.create(payload);
       localStorage.setItem("my-name", name);
@@ -709,6 +853,8 @@ async function submitBookingForm(event) {
 async function openManageModal(booking) {
   managedBooking = booking;
   $("#m-title").textContent = `${booking.desk} — ${booking.bookedBy}`;
+  const seriesNote = document.getElementById("m-series");
+  if (seriesNote) seriesNote.classList.toggle("hidden", !booking.seriesId);
   const d = $("#m-details");
   d.innerHTML = "";
   const lines = [
@@ -755,6 +901,10 @@ async function openManageModal(booking) {
   }
 
   $("#cancel-form").classList.add("hidden");
+  const scopeDiv = document.getElementById("c-scope");
+  if (scopeDiv) scopeDiv.classList.toggle("hidden", !booking.seriesId);
+  const oneRadio = document.querySelector('input[name="dscope"][value="one"]');
+  if (oneRadio) oneRadio.checked = true;
   $("#cancel-error").classList.add("hidden");
   $("#cal-menu").classList.add("hidden");
   $("#invite-emails").value = "";
@@ -775,8 +925,14 @@ async function submitCancelForm(event) {
     errEl.classList.remove("hidden");
     return;
   }
+  const scope = document.querySelector('input[name="dscope"]:checked')?.value || "one";
   try {
-    await store.cancel(managedBooking.id, name, reason);
+    if (managedBooking.seriesId && scope === "future") {
+      const n = await store.cancelSeries(managedBooking.id, name, reason);
+      showNotice(`${n} desk booking${n === 1 ? "" : "s"} cancelled.`);
+    } else {
+      await store.cancel(managedBooking.id, name, reason);
+    }
     localStorage.setItem("my-name", name);
     $("#manage-modal").close();
     await render();
@@ -980,6 +1136,14 @@ async function init() {
   $("#booking-form").addEventListener("submit", submitBookingForm);
   $("#f-desk").addEventListener("change", checkClash);
   $("#f-date").addEventListener("change", checkClash);
+
+  $("#f-repeat").addEventListener("change", () => {
+    const val = $("#f-repeat").value;
+    const isRepeat = val !== "";
+    const isMonthly = val === "monthly";
+    $("#f-until-label").classList.toggle("hidden", !isRepeat);
+    $("#f-monthly-row").classList.toggle("hidden", !isMonthly);
+  });
 
   $("#notice-ok").addEventListener("click", () => $("#notice").classList.add("hidden"));
   $("#history-btn").addEventListener("click", openHistoryModal);
