@@ -72,6 +72,45 @@
         </label>
       </div>
 
+      <div class="row repeat-row" id="repeat-row">
+        <label>Repeats
+          <select id="f-repeat">
+            <option value="">Does not repeat</option>
+            <option value="7">Every week</option>
+            <option value="14">Every 2 weeks</option>
+            <option value="21">Every 3 weeks</option>
+            <option value="28">Every 4 weeks</option>
+            <option value="42">Every 6 weeks</option>
+            <option value="56">Every 8 weeks</option>
+            <option value="monthly">Monthly (set day)</option>
+          </select>
+        </label>
+        <label id="f-until-label" class="hidden">Last date
+          <input type="date" id="f-until">
+        </label>
+      </div>
+
+      <div id="f-monthly-row" class="row hidden">
+        <label>Which
+          <select id="f-monthly-nth">
+            <option value="1">1st</option>
+            <option value="2">2nd</option>
+            <option value="3">3rd</option>
+            <option value="4">4th</option>
+            <option value="-1">Last</option>
+          </select>
+        </label>
+        <label>Day
+          <select id="f-monthly-day">
+            <option value="0">Monday</option>
+            <option value="1">Tuesday</option>
+            <option value="2">Wednesday</option>
+            <option value="3">Thursday</option>
+            <option value="4">Friday</option>
+          </select>
+        </label>
+      </div>
+
       <label>Your name
         <input type="text" id="f-name" placeholder="e.g. Jane Smith" maxlength="80" required>
       </label>
@@ -113,6 +152,7 @@
       <h2 id="m-title"></h2>
       <p id="m-details" class="details"></p>
       <div id="m-history" class="history"></div>
+      <p id="m-series"></p>
 
       <div class="actions">
         <button type="button" class="ghost-btn" data-close>Close</button>
@@ -144,6 +184,10 @@
         <label>Reason for cancelling
           <textarea id="c-reason" rows="2" placeholder="e.g. Working from home that day" maxlength="300" required></textarea>
         </label>
+        <div id="c-scope" class="scope hidden">
+          <label class="radio"><input type="radio" name="dscope" value="one" checked> Cancel just this booking</label>
+          <label class="radio"><input type="radio" name="dscope" value="future"> Cancel this and all future repeats</label>
+        </div>
         <div id="cancel-error" class="error hidden" role="alert"></div>
         <div class="actions">
           <button type="button" class="ghost-btn" id="c-back">Keep booking</button>
