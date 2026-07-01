@@ -819,7 +819,7 @@ async function submitBookingForm(event) {
       localStorage.setItem("my-name", name);
     } else if (repeatDays) {
       const result = await store.createRecurring(payload, repeatDays, untilStr);
-      if (result.skipped.length) {
+      if (result.skipped?.length) {
         const days = result.skipped.map((d) =>
           parseDate(d).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })
         );
