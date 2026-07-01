@@ -255,7 +255,7 @@ function demoStore() {
         }
         const candidate = nth === -1 ? days[days.length - 1] : days[nth - 1];
         if (candidate && candidate >= start && candidate <= until) {
-          const dateStr = candidate.toISOString().slice(0, 10);
+          const dateStr = `${candidate.getFullYear()}-${String(candidate.getMonth()+1).padStart(2,'0')}-${String(candidate.getDate()).padStart(2,'0')}`;
           const clash = checkClashFn(b.desk, dateStr, null);
           if (clash) {
             results.skipped.push(dateStr);
